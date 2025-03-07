@@ -9,6 +9,7 @@ import {
 } from '../controllers/authController.js'; // ✅ Import all required functions
 import authMiddleware from '../middleware/authMiddleware.js';
 import User from '../models/User.js';
+import { saveOnboardingData } from '../controllers/authController.js';
 
 const router = express.Router();
 

@@ -131,25 +131,24 @@ export const getSpotifyToken = async (req, res) => {
 
 // 🟢 Save Onboarding Data
 export const saveOnboardingData = async (req, res) => {
-  const { email, favoriteArtists, favoriteTracks } = req.body;
-
   try {
-    const user = await User.findOne({ where: { email } });
-    if (!user) return res.status(404).json({ message: 'User not found.' });
+    const { favoriteArtists, favoriteTracks } = req.body;
+    const user = await User.findByPk(req.session.userId);
 
-    // Save user preferences
-    user.artists = favoriteArtists.join(', '); // Convert array to string
-    user.tracks = favoriteTracks.join(', ');
-    user.isNewUser = false; // Mark user as onboarded
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.favoriteArtists = favoriteArtists.join(', ');
+    user.favoriteTracks = favoriteTracks.join(', ');
     await user.save();
 
-    res.json({ message: 'Onboarding data saved successfully.' });
+    res.json({ message: 'Onboarding data saved successfully!' });
   } catch (error) {
-    console.error('Failed to save onboarding data:', error.message);
-    res.status(500).json({ message: 'Failed to save user preferences.' });
+    console.error('❌ Failed to save onboarding data:', error.message);
+    res.status(500).json({ message: 'Failed to save onboarding data.' });
   }
 };
-
 // 🟢 Get Spotify User Profile & Stats
 export const getUserProfile = async (req, res) => {
   try {
