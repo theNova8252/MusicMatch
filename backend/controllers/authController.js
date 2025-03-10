@@ -94,20 +94,25 @@ export const googleCallback = async (req, res) => {
     let user = await User.findOne({ where: { email: userData.email } });
 
     if (!user) {
+      // Create user and set `isNewUser` to true
       user = await User.create({
         name: userData.name,
         email: userData.email,
         profileImage: userData.picture,
         googleToken: accessToken,
-        isNewUser: true,
+        isNewUser: true, // Flag user as new
       });
 
-      // Redirect to onboarding form
-      return res.redirect(`http://localhost:9000/onboarding?email=${userData.email}`);
+      req.session.userId = user.id;
+
+      console.log('New user detected, redirecting to onboarding...');
+      return res.redirect(`http://localhost:9000/onboarding`);
     }
 
-    const token = generateToken(user);
-    res.redirect(`http://localhost:9000/dashboard?token=${token}`);
+    // Existing user
+    req.session.userId = user.id;
+    console.log('Existing user, redirecting to dashboard...');
+    res.redirect(`http://localhost:9000/dashboard`);
   } catch (error) {
     console.error('Google Callback Error:', error.response?.data || error.message);
     res.status(500).send('Failed to authenticate with Google.');

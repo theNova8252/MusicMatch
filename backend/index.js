@@ -16,6 +16,7 @@ dotenv.config();
 
 const { Pool } = pkg; // Extract Pool from pg
 
+
 //Set up PostgreSQL pool
 const pgPool = new Pool({
   user: process.env.DB_USER,
