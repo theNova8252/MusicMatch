@@ -57,10 +57,10 @@ app.get('/', (req, res) => res.send('Music Match API is running!'));
 sequelize
   .sync({ alter: true })
   .then(() => {
-    console.log('✅ Database synced.');
+    console.log('Database synced.');
   })
   .catch((error) => {
-    console.error('❌ Failed to sync database:', error.message);
+    console.error('Failed to sync database:', error.message);
   });
 //Start Server
 app.listen(5000, () => console.log('🚀 Server running on port 5000'));
