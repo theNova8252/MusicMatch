@@ -146,11 +146,12 @@ export const saveOnboardingData = async (req, res) => {
 
     user.favoriteArtists = favoriteArtists.join(', ');
     user.favoriteTracks = favoriteTracks.join(', ');
+    user.isNewUser = false; 
     await user.save();
 
     res.json({ message: 'Onboarding data saved successfully!' });
   } catch (error) {
-    console.error('❌ Failed to save onboarding data:', error.message);
+    console.error('Failed to save onboarding data:', error.message);
     res.status(500).json({ message: 'Failed to save onboarding data.' });
   }
 };
@@ -218,6 +219,7 @@ export const getUserProfile = async (req, res) => {
         name: user.name,
         email: user.email,
         profileImage: user.profileImage,
+        isNewUser: user.isNewUser, 
         spotifyToken: token,
         customArtists: user.artists ? user.artists.split(', ') : [],
       },

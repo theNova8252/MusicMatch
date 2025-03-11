@@ -10,6 +10,7 @@ User.init(
     spotifyToken: DataTypes.STRING(2048),
     profileImage: DataTypes.STRING,
     artists: DataTypes.JSONB,
+    isNewUser: { type: DataTypes.BOOLEAN, defaultValue: false },
   },
   {
     sequelize,

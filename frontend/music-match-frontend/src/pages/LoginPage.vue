@@ -10,6 +10,32 @@
 </template>
 
 <script setup>
+import { useRouter } from 'vue-router';
+import axios from 'axios';
+import { onMounted } from 'vue';
+
+const router = useRouter();
+
+async function checkUser(){
+  try{
+    const response = await axios.get("http://localhost:5000/api/auth/profile", {withCredentials: true});
+    if (response.data.user.isNewUser) {
+      router.push('/onboarding');
+
+    }
+    else {
+      router.push('/dashboard');
+    }
+  }
+  catch{
+    router.push('/login');
+  }
+  
+  
+}
+onMounted(() => {
+  checkUser();
+});
 function loginWithSpotify() {
   window.location.href = 'http://localhost:5000/api/auth/spotify';
 }
