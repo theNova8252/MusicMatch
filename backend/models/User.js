@@ -8,9 +8,10 @@ User.init(
     name: DataTypes.STRING,
     email: { type: DataTypes.STRING, unique: true },
     spotifyToken: DataTypes.STRING(2048),
+    googleToken: DataTypes.STRING(2048),
     profileImage: DataTypes.STRING,
     artists: DataTypes.JSONB,
-    isNewUser: { type: DataTypes.BOOLEAN, defaultValue: false },
+    isNewUser: { type: DataTypes.BOOLEAN, defaultValue: true },
   },
   {
     sequelize,

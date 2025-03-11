@@ -13,7 +13,7 @@ export const spotifyLogin = (req, res) => {
   res.redirect(spotifyAuthUrl);
 };
 
-// 🟢 Spotify Login
+// Spotify Login
 // Spotify Callback
 export const spotifyCallback = async (req, res) => {
   const code = req.query.code;
@@ -49,6 +49,7 @@ export const spotifyCallback = async (req, res) => {
         email: userData.email,
         spotifyToken: accessToken,
         profileImage: userData.images?.[0]?.url || null,
+        isNewUser: true,
       });
     } else {
       user.spotifyToken = accessToken;
@@ -56,12 +57,12 @@ export const spotifyCallback = async (req, res) => {
       await user.save();
     }
 
-    console.log('✅ User Updated:', user);
+    console.log('User Updated:', user);
 
     req.session.userId = user.id;
     res.redirect('http://localhost:9000/dashboard');
   } catch (error) {
-    console.error('❌ Spotify Callback Error:', error.response?.data || error.message);
+    console.error('Spotify Callback Error:', error.response?.data || error.message);
     res.status(500).send('Failed to authenticate with Spotify.');
   }
 };
@@ -94,13 +95,13 @@ export const googleCallback = async (req, res) => {
     let user = await User.findOne({ where: { email: userData.email } });
 
     if (!user) {
-      // Create user and set `isNewUser` to true
+      // New User: Create and flag as needing onboarding
       user = await User.create({
         name: userData.name,
         email: userData.email,
         profileImage: userData.picture,
         googleToken: accessToken,
-        isNewUser: true, // Flag user as new
+        isNewUser: true, // Mark the user as needing onboarding
       });
 
       req.session.userId = user.id;
@@ -109,10 +110,16 @@ export const googleCallback = async (req, res) => {
       return res.redirect(`http://localhost:9000/onboarding`);
     }
 
-    // Existing user
+    // Existing User: Check if onboarding is completed
     req.session.userId = user.id;
-    console.log('Existing user, redirecting to dashboard...');
-    res.redirect(`http://localhost:9000/dashboard`);
+
+    if (user.isNewUser) {
+      console.log('Returning user without onboarding, redirecting to onboarding...');
+      return res.redirect(`http://localhost:9000/onboarding`);
+    }
+
+    console.log('Existing user with onboarding complete, redirecting to dashboard...');
+    return res.redirect(`http://localhost:9000/dashboard`);
   } catch (error) {
     console.error('Google Callback Error:', error.response?.data || error.message);
     res.status(500).send('Failed to authenticate with Google.');
@@ -132,9 +139,9 @@ export const getSpotifyToken = async (req, res) => {
 };
 
 
-// 🟢 Google Callback
+// Google Callback
 
-// 🟢 Save Onboarding Data
+//  Save Onboarding Data
 export const saveOnboardingData = async (req, res) => {
   try {
     const { favoriteArtists, favoriteTracks } = req.body;
@@ -155,19 +162,19 @@ export const saveOnboardingData = async (req, res) => {
     res.status(500).json({ message: 'Failed to save onboarding data.' });
   }
 };
-// 🟢 Get Spotify User Profile & Stats
+// Get Spotify User Profile & Stats
 export const getUserProfile = async (req, res) => {
   try {
-    // 🔒 Check if user is authenticated
+    // Check if user is authenticated
     if (!req.session || !req.session.userId) {
-      console.warn('⚠️ No session found.');
+      console.warn('No session found.');
       return res.status(401).json({ message: 'Unauthorized: No session found.' });
     }
 
     // 🔍 Fetch user from database
     const user = await User.findByPk(req.session.userId);
     if (!user) {
-      console.warn('⚠️ User not found for session ID:', req.session.userId);
+      console.warn('User not found for session ID:', req.session.userId);
       return res.status(404).json({ message: 'User not found.' });
     }
 
@@ -176,17 +183,17 @@ export const getUserProfile = async (req, res) => {
     // 🎫 Retrieve Spotify token
     const token = user.spotifyToken;
     if (!token) {
-      console.warn('⚠️ No Spotify token found for user:', user.email);
+      console.warn('No Spotify token found for user:', user.email);
       return res.status(404).json({ message: 'Spotify token not available.' });
     }
 
-    console.log('🔑 Using Spotify Token:', token);
+    console.log('Using Spotify Token:', token);
 
     // 👤 Fetch Spotify Profile
     const profileResponse = await axios.get('https://api.spotify.com/v1/me', {
       headers: { Authorization: `Bearer ${token}` },
     });
-    console.log('👤 Spotify Profile:', profileResponse.data);
+    console.log('Spotify Profile:', profileResponse.data);
 
     // 🎵 Fetch Top Artists
     const topArtistsResponse = await axios.get(

@@ -20,6 +20,10 @@ const routes = [
     path: '/:catchAll(.*)*',
     component: () => import('pages/ErrorNotFound.vue'),
   },
+  {
+    path: '/onboarding',
+    component: () => import('pages/OnboardingForm.vue'), // Ensure this file exists
+  },
 ]
 
 export default routes
