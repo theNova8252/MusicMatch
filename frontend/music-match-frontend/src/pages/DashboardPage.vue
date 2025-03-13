@@ -1,6 +1,7 @@
 <template>
   <q-page class="flex flex-center column">
     <div class="profile-container">
+      <q-btn color="red" label="Sign Out" class="sign-out-btn" @click="logout" />
       <q-img v-if="user.profileImage" :src="user.profileImage" class="profile-img" />
 
       <h1 class="profile-name">{{ user.name || 'Guest' }}</h1>
@@ -63,6 +64,7 @@
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 
+
 const user = ref({});
 const customArtist = ref('');
 const spotifyTopArtists = ref([]);
@@ -105,9 +107,25 @@ async function addArtist() {
   }
 }
 
+async function logout() {
+  try {
+    localStorage.setItem("logoutInProgress", "true"); 
+    await axios.get('http://localhost:5000/api/auth/logout', { withCredentials: true });
+
+    localStorage.removeItem('authToken');
+    sessionStorage.clear();
+
+    window.location.href = "/login"; 
+  } catch (error) {
+    console.error('Failed to log out:', error.response?.data || error.message);
+  }
+}
+
 onMounted(() => {
   fetchUserProfile();
+  
 });
+
 </script>
 
 <style scoped>
@@ -120,7 +138,11 @@ onMounted(() => {
   justify-content: center;
   padding: 20px;
 }
-
+.sign-out-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
 /* Profile container with glass effect */
 .profile-container {
   text-align: center;

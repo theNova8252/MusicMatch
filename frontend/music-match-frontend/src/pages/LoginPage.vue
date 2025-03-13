@@ -16,22 +16,25 @@ import { onMounted } from 'vue';
 
 const router = useRouter();
 
-async function checkUser(){
-  try{
-    const response = await axios.get("http://localhost:5000/api/auth/profile", {withCredentials: true});
-    if (response.data.user.isNewUser) {
-      router.push('/onboarding');
+async function checkUser() {
+  if (localStorage.getItem("logoutInProgress")) {
+    console.warn("Skipping session check due to recent logout.");
+    return;
+  }
 
+  try {
+    const response = await axios.get("http://localhost:5000/api/auth/profile", { withCredentials: true });
+
+    if (response.data?.user) {
+      if (response.data.user.isNewUser) {
+        router.push('/onboarding');
+      } else {
+        router.push('/dashboard');
+      }
     }
-    else {
-      router.push('/dashboard');
-    }
+  } catch {
+    console.warn("No active session found. Staying on login page.");
   }
-  catch{
-    router.push('/login');
-  }
-  
-  
 }
 onMounted(() => {
   checkUser();

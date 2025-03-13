@@ -5,7 +5,8 @@ import {
   spotifyCallback,
   googleLogin,
   googleCallback,
-  addCustomArtist
+  addCustomArtist,
+  logoutUser
 } from '../controllers/authController.js'; // ✅ Import all required functions
 import authMiddleware from '../middleware/authMiddleware.js';
 import User from '../models/User.js';
@@ -16,8 +17,7 @@ const router = express.Router();
 // 🟢 Test Route
 router.get('/test', (req, res) => {
   res.send('Auth route is working!');
-});
-
+}); 
 
 router.get('/spotify/token', authMiddleware, async (req, res) => {
   try {
@@ -46,6 +46,7 @@ router.get('/spotify/callback', spotifyCallback);
 router.get('/google', googleLogin);
 router.get('/google/callback', googleCallback);
 router.post('/onboarding', saveOnboardingData);
+router.get('/logout', logoutUser);
 
 
 // 🟢 Add Artist

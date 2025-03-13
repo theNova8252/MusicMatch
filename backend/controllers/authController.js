@@ -248,6 +248,17 @@ export const getUserProfile = async (req, res) => {
     }
   }
 };
+export const logoutUser = (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('Logout Error:', err);
+      return res.status(500).json({ message: 'Failed to log out.' });
+    }
+
+    res.clearCookie('connect.sid', { path: '/' }); 
+    return res.status(200).json({ message: 'Logged out successfully!' });
+  });
+};
 // 🟢 Add Custom Artist
 export const addCustomArtist = async (req, res) => {
   const { artist } = req.body;
