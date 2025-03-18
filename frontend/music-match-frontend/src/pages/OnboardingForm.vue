@@ -9,15 +9,13 @@
 
     <div v-else-if="step === 2" class="onboarding-container">
       <h2>Step 2: Select Favorite Artists</h2>
-      <div v-if="spotifyArtists.length" class="artist-grid">
-        <q-card v-for="artist in spotifyArtists" :key="artist.name" class="artist-card"
-          :class="{ selected: selectedArtists.includes(artist.name) }" @click="selectArtist(artist)">
+      <div class="artist-grid">
+        <q-card v-for="artist in artists" :key="artist.name" class="artist-card"
+          :class="{ selected: selectedArtists.includes(artist.name) }" @click="toggleArtist(artist.name)">
           <q-img :src="artist.image" class="artist-img" />
           <p>{{ artist.name }}</p>
         </q-card>
       </div>
-      <q-input v-model="customArtist" label="Or enter your own" dense outlined />
-      <q-btn color="primary" label="Fetch Artists" @click="fetchArtists" />
       <q-btn color="secondary" label="Finish Setup" @click="finishOnboarding" />
     </div>
   </q-page>
@@ -31,10 +29,16 @@ import { useRouter } from 'vue-router';
 const username = ref('');
 const dateOfBirth = ref('');
 const step = ref(1);
-const spotifyArtists = ref([]);
 const selectedArtists = ref([]);
-const customArtist = ref('');
 const router = useRouter();
+
+const artists = [
+  { name: "Billie Eilish", image: "/src/assets/images/billie.jpg" },
+  { name: "Dua Lipa", image: "/src/assets/images/dualipa.jpg" },
+  { name: "Ed Sheeran", image: "/src/assets/images/edsheeran.jpg" },
+  { name: "Tate McRae", image: "/src/assets/images/tate.jpg" },
+  { name: "The Weeknd", image: "/src/assets/images/weeknd.jpg" }
+];
 
 async function saveUserDetails() {
   try {
@@ -49,29 +53,19 @@ async function saveUserDetails() {
   }
 }
 
-async function fetchArtists() {
-  try {
-    const response = await axios.get(`http://localhost:5000/api/auth/fetch-spotify-artists?search=${customArtist.value}`, { withCredentials: true });
-    spotifyArtists.value = response.data.map(artist => ({
-      name: artist.name,
-      image: artist.images.length > 0 ? artist.images[0].url : 'https://via.placeholder.com/150'
-    }));
-  } catch (error) {
-    console.error('Failed to fetch artists:', error.response?.data || error.message);
-  }
-}
-
-function selectArtist(artist) {
-  if (!selectedArtists.value.includes(artist.name)) {
-    selectedArtists.value.push(artist.name);
+function toggleArtist(artist) {
+  if (selectedArtists.value.includes(artist)) {
+    selectedArtists.value = selectedArtists.value.filter(a => a !== artist);
   } else {
-    selectedArtists.value = selectedArtists.value.filter(a => a !== artist.name);
+    selectedArtists.value.push(artist);
   }
 }
 
 async function finishOnboarding() {
   try {
     await axios.post('http://localhost:5000/api/auth/save-onboarding-data', {
+      username: username.value,
+      dateOfBirth: dateOfBirth.value,
       favoriteArtists: selectedArtists.value
     }, { withCredentials: true });
 
@@ -108,7 +102,7 @@ async function finishOnboarding() {
 }
 
 .artist-card.selected {
-  border: 2px solid green;
+  border: 2px solid #1db954;
 }
 
 .artist-img {

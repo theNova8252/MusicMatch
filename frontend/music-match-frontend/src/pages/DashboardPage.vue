@@ -75,16 +75,23 @@ const currentlyPlaying = ref(null);
 async function fetchUserProfile() {
   try {
     const res = await axios.get('http://localhost:5000/api/auth/profile', { withCredentials: true });
+
     user.value = res.data.user;
+    user.value.name = res.data.user.username || "Guest";
+    user.value.dateOfBirth = res.data.user.dateOfBirth || "Not provided";
+    user.value.artists = res.data.user.favoriteArtists ? res.data.user.favoriteArtists.split(', ') : [];
+
     spotifyTopArtists.value = res.data.spotifyData.topArtists.map(a => ({
       name: a.name,
       image: a.images?.[0]?.url || 'https://via.placeholder.com/100'
     }));
+
     spotifyTopTracks.value = res.data.spotifyData.topTracks.map(t => ({
       name: t.name,
       artist: t.artists[0].name,
       albumCover: t.album.images[0].url
     }));
+
     currentlyPlaying.value = res.data.spotifyData.currentPlayback?.item
       ? {
         name: res.data.spotifyData.currentPlayback.item.name,
@@ -96,7 +103,6 @@ async function fetchUserProfile() {
     console.error('Failed to fetch profile:', error.response?.data || error.message);
   }
 }
-
 async function addArtist() {
   if (!customArtist.value) return;
   try {

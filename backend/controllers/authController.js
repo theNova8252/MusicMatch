@@ -134,7 +134,6 @@ export const getSpotifyToken = async (req, res) => {
   }
 };
 
-
 export const fetchSpotifyArtists = async (req, res) => {
   try {
     const searchQuery = req.query.search || 'pop';
@@ -159,25 +158,24 @@ export const fetchSpotifyArtists = async (req, res) => {
 
 export const saveOnboardingData = async (req, res) => {
   try {
-    const { favoriteArtists, favoriteTracks } = req.body;
+    const { username, dateOfBirth, favoriteArtists } = req.body;
     const user = await User.findByPk(req.session.userId);
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    user.username = username;
+    user.dateOfBirth = dateOfBirth;
     user.favoriteArtists = favoriteArtists.join(', ');
-    user.favoriteTracks = favoriteTracks.join(', ');
-    user.isNewUser = false;
     await user.save();
 
-    res.json({ message: 'Onboarding data saved successfully!' });
+    res.json({ message: 'Onboarding data saved successfully!', user });
   } catch (error) {
     console.error('Failed to save onboarding data:', error.message);
     res.status(500).json({ message: 'Failed to save onboarding data.' });
   }
 };
-
 // Get Spotify User Profile & Stats
 export const getUserProfile = async (req, res) => {
   try {
@@ -242,7 +240,7 @@ export const getUserProfile = async (req, res) => {
         name: user.name,
         email: user.email,
         profileImage: user.profileImage,
-        isNewUser: user.isNewUser, 
+        isNewUser: user.isNewUser,
         spotifyToken: token,
         customArtists: user.artists ? user.artists.split(', ') : [],
       },
@@ -271,7 +269,7 @@ export const logoutUser = (req, res) => {
       return res.status(500).json({ message: 'Failed to log out.' });
     }
 
-    res.clearCookie('connect.sid', { path: '/' }); 
+    res.clearCookie('connect.sid', { path: '/' });
     return res.status(200).json({ message: 'Logged out successfully!' });
   });
 };

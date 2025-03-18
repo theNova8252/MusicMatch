@@ -8,11 +8,11 @@ import {
   addCustomArtist,
   logoutUser,
   saveUserDetails,
-  fetchSpotifyArtists
+  fetchSpotifyArtists,
+  saveOnboardingData
 } from '../controllers/authController.js'; // ✅ Import all required functions
 import authMiddleware from '../middleware/authMiddleware.js';
 import User from '../models/User.js';
-import { saveOnboardingData } from '../controllers/authController.js';
 
 const router = express.Router();
 
@@ -28,10 +28,10 @@ router.get('/spotify/token', authMiddleware, async (req, res) => {
       return res.status(404).json({ message: 'Spotify token not found.' });
     }
 
-    console.log('🔑 Retrieved Spotify Token:', user.spotifyToken);
+    console.log('Retrieved Spotify Token:', user.spotifyToken);
     res.json({ token: user.spotifyToken });
   } catch (error) {
-    console.error('❌ Failed to fetch Spotify token:', error.message);
+    console.error('Failed to fetch Spotify token:', error.message);
     res.status(500).json({ message: 'Failed to fetch token.' });
   }
 });
@@ -46,10 +46,11 @@ router.get('/spotify/callback', spotifyCallback);
 
 router.get('/google', googleLogin);
 router.get('/google/callback', googleCallback);
-router.post('/onboarding', saveOnboardingData);
+router.post('/save-onboarding-data', saveOnboardingData);
 router.get('/logout', logoutUser);
 router.post('/save-user-details', saveUserDetails);
 router.get('/fetch-spotify-artists', authMiddleware, fetchSpotifyArtists);
+
 
 
 router.post('/add-artist', authMiddleware, addCustomArtist);
