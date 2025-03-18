@@ -1,76 +1,83 @@
 <template>
-  <q-page class="onboarding-container">
-    <h1>Welcome, {{ email }}</h1>
-    <p>Tell us about your music taste!</p>
+  <q-page class="flex flex-center">
+    <div v-if="step === 1" class="onboarding-container">
+      <h2>Step 1: User Details</h2>
+      <q-input v-model="username" label="Preferred Username" dense outlined />
+      <q-input v-model="dateOfBirth" type="date" label="Date of Birth" dense outlined />
+      <q-btn color="primary" label="Next" @click="saveUserDetails" />
+    </div>
 
-    <q-card class="onboarding-card">
-      <q-card-section>
-        <h3>Select your favorite artists</h3>
-        <q-chip v-for="artist in suggestedArtists" :key="artist" :selected="selectedArtists.includes(artist)" clickable
-          @click="toggleArtist(artist)">
-          {{ artist }}
-        </q-chip>
-
-        <q-input v-model="customArtist" label="Or enter your own" @keydown.enter="addCustomArtist" />
-      </q-card-section>
-
-      <q-card-section>
-        <h3>Select your favorite tracks</h3>
-        <q-input v-model="customTrack" label="Enter your favorite song" @keydown.enter="addCustomTrack" />
-      </q-card-section>
-
-      <q-btn label="Finish Setup" color="primary" @click="submitOnboarding" />
-    </q-card>
+    <div v-else-if="step === 2" class="onboarding-container">
+      <h2>Step 2: Select Favorite Artists</h2>
+      <div v-if="spotifyArtists.length" class="artist-grid">
+        <q-card v-for="artist in spotifyArtists" :key="artist.name" class="artist-card"
+          :class="{ selected: selectedArtists.includes(artist.name) }" @click="selectArtist(artist)">
+          <q-img :src="artist.image" class="artist-img" />
+          <p>{{ artist.name }}</p>
+        </q-card>
+      </div>
+      <q-input v-model="customArtist" label="Or enter your own" dense outlined />
+      <q-btn color="primary" label="Fetch Artists" @click="fetchArtists" />
+      <q-btn color="secondary" label="Finish Setup" @click="finishOnboarding" />
+    </div>
   </q-page>
 </template>
 
 <script setup>
 import { ref } from 'vue';
 import axios from 'axios';
-import { useRoute, useRouter } from 'vue-router';
+import { useRouter } from 'vue-router';
 
-const route = useRoute();
-const router = useRouter();
-const email = ref(route.query.email || '');
-const suggestedArtists = ['The Weeknd', 'Billie Eilish', 'Drake', 'Adele'];
+const username = ref('');
+const dateOfBirth = ref('');
+const step = ref(1);
+const spotifyArtists = ref([]);
 const selectedArtists = ref([]);
 const customArtist = ref('');
-const customTrack = ref('');
-const selectedTracks = ref([]);
+const router = useRouter();
 
-function toggleArtist(artist) {
-  if (selectedArtists.value.includes(artist)) {
-    selectedArtists.value = selectedArtists.value.filter(a => a !== artist);
-  } else {
-    selectedArtists.value.push(artist);
-  }
-}
-
-function addCustomArtist() {
-  if (customArtist.value) {
-    selectedArtists.value.push(customArtist.value);
-    customArtist.value = '';
-  }
-}
-
-function addCustomTrack() {
-  if (customTrack.value) {
-    selectedTracks.value.push(customTrack.value);
-    customTrack.value = '';
-  }
-}
-
-async function submitOnboarding() {
+async function saveUserDetails() {
   try {
-    await axios.post('http://localhost:5000/api/auth/onboarding', {
-      email: email.value,
-      favoriteArtists: selectedArtists.value,
-      favoriteTracks: selectedTracks.value,
-    });
+    await axios.post('http://localhost:5000/api/auth/save-user-details', {
+      username: username.value,
+      dateOfBirth: dateOfBirth.value
+    }, { withCredentials: true });
+
+    step.value = 2;
+  } catch (error) {
+    console.error('Failed to save user details:', error.response?.data || error.message);
+  }
+}
+
+async function fetchArtists() {
+  try {
+    const response = await axios.get(`http://localhost:5000/api/auth/fetch-spotify-artists?search=${customArtist.value}`, { withCredentials: true });
+    spotifyArtists.value = response.data.map(artist => ({
+      name: artist.name,
+      image: artist.images.length > 0 ? artist.images[0].url : 'https://via.placeholder.com/150'
+    }));
+  } catch (error) {
+    console.error('Failed to fetch artists:', error.response?.data || error.message);
+  }
+}
+
+function selectArtist(artist) {
+  if (!selectedArtists.value.includes(artist.name)) {
+    selectedArtists.value.push(artist.name);
+  } else {
+    selectedArtists.value = selectedArtists.value.filter(a => a !== artist.name);
+  }
+}
+
+async function finishOnboarding() {
+  try {
+    await axios.post('http://localhost:5000/api/auth/save-onboarding-data', {
+      favoriteArtists: selectedArtists.value
+    }, { withCredentials: true });
 
     router.push('/dashboard');
   } catch (error) {
-    console.error('Failed to save onboarding data:', error.response?.data || error.message);
+    console.error('Failed to complete onboarding:', error.response?.data || error.message);
   }
 }
 </script>
@@ -78,14 +85,35 @@ async function submitOnboarding() {
 <style scoped>
 .onboarding-container {
   text-align: center;
-  padding: 30px;
+  padding: 20px;
+  background: white;
+  border-radius: 10px;
+  width: 400px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
 }
 
-.onboarding-card {
-  padding: 20px;
-  max-width: 600px;
-  margin: 20px auto;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  border-radius: 15px;
+.artist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.artist-card {
+  text-align: center;
+  padding: 10px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.artist-card.selected {
+  border: 2px solid green;
+}
+
+.artist-img {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
 }
 </style>

@@ -135,7 +135,27 @@ export const getSpotifyToken = async (req, res) => {
 };
 
 
-// Google Callback
+export const fetchSpotifyArtists = async (req, res) => {
+  try {
+    const searchQuery = req.query.search || 'pop';
+    const token = process.env.SPOTIFY_ACCESS_TOKEN;
+
+    const response = await axios.get(`https://api.spotify.com/v1/search`, {
+      headers: { Authorization: `Bearer ${token}` },
+      params: { q: searchQuery, type: 'artist', limit: 10 },
+    });
+
+    const artists = response.data.artists.items.map((artist) => ({
+      name: artist.name,
+      images: artist.images,
+    }));
+
+    res.json(artists);
+  } catch (error) {
+    console.error('Failed to fetch Spotify artists:', error.message);
+    res.status(500).json({ message: 'Failed to fetch artists.' });
+  }
+};
 
 export const saveOnboardingData = async (req, res) => {
   try {
@@ -255,7 +275,6 @@ export const logoutUser = (req, res) => {
     return res.status(200).json({ message: 'Logged out successfully!' });
   });
 };
-// 🟢 Add Custom Artist
 export const addCustomArtist = async (req, res) => {
   const { artist } = req.body;
   if (!artist) return res.status(400).json({ message: 'Artist name is required.' });
@@ -275,5 +294,25 @@ export const addCustomArtist = async (req, res) => {
   } catch (error) {
     console.error('Add Artist Error:', error.message);
     res.status(500).json({ message: 'Failed to add artist.' });
+  }
+};
+
+export const saveUserDetails = async (req, res) => {
+  try {
+    const { username, dateOfBirth } = req.body;
+    const user = await User.findByPk(req.session.userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.username = username;
+    user.dateOfBirth = dateOfBirth;
+    await user.save();
+
+    res.json({ message: 'User details saved successfully!' });
+  } catch (error) {
+    console.error('Failed to save user details:', error.message);
+    res.status(500).json({ message: 'Failed to save user details.' });
   }
 };
