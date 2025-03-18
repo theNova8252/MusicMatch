@@ -1,5 +1,3 @@
-// backend/index.js
-
 import express from 'express';
 import session from 'express-session';
 import PgSession from 'connect-pg-simple';
@@ -11,11 +9,18 @@ import { authRoutes } from './routes/auth.js';
 import matchRoutes from './routes/match.js';
 import chatRoutes from './routes/chat.js';
 import sequelize from './config/db.js';
+import path from 'path';
 
-dotenv.config();
+dotenv.config({path: path.resolve("./backend/", '.env')});
+//dotenv.config();
+console.log("DB_PASSWORD:", process.env.DB_PASS, typeof process.env.DB_PASS);
+
+
+// Log the values of DB_USER and DB_PASS
+console.log('DB_USER:', process.env.DB_USER);
+console.log('DB_PASS:', process.env.DB_PASS);
 
 const { Pool } = pkg; // Extract Pool from pg
-
 
 //Set up PostgreSQL pool
 const pgPool = new Pool({
@@ -43,7 +48,7 @@ app.use(
   }),
 );
 
-app.use(cors({ origin: 'http://localhost:9000', credentials: true }));
+app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 app.use(bodyParser.json());
 
 //Routes
@@ -52,6 +57,8 @@ app.use('/api/match', matchRoutes);
 app.use('/api/chat', chatRoutes);
 
 app.get('/', (req, res) => res.send('Music Match API is running!'));
+
+
 
 //Database Sync
 sequelize
@@ -62,5 +69,8 @@ sequelize
   .catch((error) => {
     console.error('Failed to sync database:', error.message);
   });
+
 //Start Server
-app.listen(5000, () => console.log('Server running on port 5000'));
+app.listen(process.env.PORT || 5000, () =>
+  console.log(`Server running on port ${process.env.PORT || 5000}`)
+);
