@@ -49,7 +49,13 @@ app.use(
   }),
 );
 
-app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
+app.use(
+  cors({
+    origin: ['http://localhost:5173', 'http://localhost:9000'], // Allow both frontend URLs
+    credentials: true, // Allow cookies and authentication headers
+  }),
+);
+
 app.use(bodyParser.json());
 
 //Routes
