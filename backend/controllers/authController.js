@@ -95,36 +95,32 @@ export const googleCallback = async (req, res) => {
     let user = await User.findOne({ where: { email: userData.email } });
 
     if (!user) {
-      // New User: Create and flag as needing onboarding
       user = await User.create({
         name: userData.name,
         email: userData.email,
         profileImage: userData.picture,
         googleToken: accessToken,
-        isNewUser: true, // Mark the user as needing onboarding
+        isNewUser: true,
       });
 
       req.session.userId = user.id;
 
-      console.log('New user detected, redirecting to onboarding...');
-      return res.redirect(`http://localhost:9000/onboarding`);
+      return res.redirect('http://localhost:9000/onboarding');
     }
 
-    // Existing User: Check if onboarding is completed
     req.session.userId = user.id;
 
     if (user.isNewUser) {
-      console.log('Returning user without onboarding, redirecting to onboarding...');
-      return res.redirect(`http://localhost:9000/onboarding`);
+      return res.redirect('http://localhost:9000/onboarding');
     }
 
-    console.log('Existing user with onboarding complete, redirecting to dashboard...');
-    return res.redirect(`http://localhost:9000/dashboard`);
+    return res.redirect('http://localhost:9000/dashboard');
   } catch (error) {
     console.error('Google Callback Error:', error.response?.data || error.message);
     res.status(500).send('Failed to authenticate with Google.');
   }
 };
+
 export const getSpotifyToken = async (req, res) => {
   try {
     const user = await User.findByPk(req.session.userId);
@@ -141,7 +137,6 @@ export const getSpotifyToken = async (req, res) => {
 
 // Google Callback
 
-//  Save Onboarding Data
 export const saveOnboardingData = async (req, res) => {
   try {
     const { favoriteArtists, favoriteTracks } = req.body;
@@ -153,7 +148,7 @@ export const saveOnboardingData = async (req, res) => {
 
     user.favoriteArtists = favoriteArtists.join(', ');
     user.favoriteTracks = favoriteTracks.join(', ');
-    user.isNewUser = false; 
+    user.isNewUser = false;
     await user.save();
 
     res.json({ message: 'Onboarding data saved successfully!' });
@@ -162,6 +157,7 @@ export const saveOnboardingData = async (req, res) => {
     res.status(500).json({ message: 'Failed to save onboarding data.' });
   }
 };
+
 // Get Spotify User Profile & Stats
 export const getUserProfile = async (req, res) => {
   try {

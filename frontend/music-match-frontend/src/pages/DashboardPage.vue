@@ -62,6 +62,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import axios from 'axios';
 
 
@@ -106,20 +107,21 @@ async function addArtist() {
     console.error('Failed to add artist:', error.response?.data || error.message);
   }
 }
+const router = useRouter();
 
 async function logout() {
   try {
-    localStorage.setItem("logoutInProgress", "true"); 
     await axios.get('http://localhost:5000/api/auth/logout', { withCredentials: true });
-
     localStorage.removeItem('authToken');
     sessionStorage.clear();
+    document.cookie = 'connect.sid=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
 
-    window.location.href = "/login"; 
+    router.push('/login');
   } catch (error) {
     console.error('Failed to log out:', error.response?.data || error.message);
   }
 }
+
 
 onMounted(() => {
   fetchUserProfile();

@@ -17,11 +17,6 @@ import { onMounted } from 'vue';
 const router = useRouter();
 
 async function checkUser() {
-  if (localStorage.getItem("logoutInProgress")) {
-    console.warn("Skipping session check due to recent logout.");
-    return;
-  }
-
   try {
     const response = await axios.get("http://localhost:5000/api/auth/profile", { withCredentials: true });
 
@@ -33,9 +28,15 @@ async function checkUser() {
       }
     }
   } catch {
-    console.warn("No active session found. Staying on login page.");
+    console.log("No active session found. Staying on login page.");
   }
 }
+
+onMounted(() => {
+  checkUser();
+});
+
+
 onMounted(() => {
   checkUser();
 });
