@@ -202,9 +202,19 @@ async function logout() {
   try {
     await axios.get('http://localhost:5000/api/auth/logout', { withCredentials: true });
 
-    // Clear local storage and cookies
+    // Clear ALL possible storage locations
     localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('refreshToken');
+
+    // Clear sessionStorage
     sessionStorage.clear();
+
+    // Clear cookies (if your app uses them)
+    document.cookie.split(";").forEach(function (c) {
+      document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+    });
 
     // Use a simple alert instead of Quasar notification
     alert('Logged out successfully');
@@ -212,13 +222,21 @@ async function logout() {
     // Redirect to login page
     router.push('/login');
   } catch (error) {
-    console.error('Failed to log out:', error.response?.data || error.message);
+    console.error('Failed to log out:', error);
     alert('Failed to log out');
   }
 }
 
 onMounted(() => {
   fetchUserProfile();
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('user');
+  sessionStorage.clear();
+
+  // If your app uses cookies, clear those too
+  document.cookie.split(";").forEach(function (c) {
+    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+  });
 });
 </script>
 

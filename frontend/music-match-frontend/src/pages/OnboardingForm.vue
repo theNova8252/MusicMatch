@@ -78,7 +78,7 @@ const saveOnboardingData = async () => {
 
   try {
     await axios.post(
-      'http://localhost:5000/api/auth/onboarding',
+      'http://localhost:5000/api/auth/save-onboarding-data',
       {
         username: username.value,
         dateOfBirth: dateOfBirth.value,

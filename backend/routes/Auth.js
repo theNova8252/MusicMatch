@@ -50,7 +50,7 @@ router.post('/save-onboarding-data', saveOnboardingData);
 router.get('/logout', logoutUser);
 router.post('/save-user-details', saveUserDetails);
 router.get('/fetch-spotify-artists', authMiddleware, fetchSpotifyArtists);
-
+router.post('/onboarding', authMiddleware, saveOnboardingData);
 
 
 router.post('/add-artist', authMiddleware, addCustomArtist);
