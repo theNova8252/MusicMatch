@@ -24,6 +24,10 @@ const routes = [
     path: '/onboarding',
     component: () => import('pages/OnboardingForm.vue'), // Ensure this file exists
   },
+  {
+    path: '/:catchAll(.*)*',
+    redirect: '/login',
+  },
 ]
 
 export default routes

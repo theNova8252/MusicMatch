@@ -1,113 +1,157 @@
 <template>
-  <q-page class="flex flex-center">
-    <div v-if="step === 1" class="onboarding-container">
-      <h2>Step 1: User Details</h2>
-      <q-input v-model="username" label="Preferred Username" dense outlined />
-      <q-input v-model="dateOfBirth" type="date" label="Date of Birth" dense outlined />
-      <q-btn color="primary" label="Next" @click="saveUserDetails" />
-    </div>
+  <q-page class="flex flex-center column">
+    <div class="onboarding-container">
+      <h1 class="text-h4 q-mb-lg">Welcome to MusicMatch!</h1>
 
-    <div v-else-if="step === 2" class="onboarding-container">
-      <h2>Step 2: Select Favorite Artists</h2>
-      <div class="artist-grid">
-        <q-card v-for="artist in artists" :key="artist.name" class="artist-card"
-          :class="{ selected: selectedArtists.includes(artist.name) }" @click="toggleArtist(artist.name)">
-          <q-img :src="artist.image" class="artist-img" />
-          <p>{{ artist.name }}</p>
-        </q-card>
-      </div>
-      <q-btn color="secondary" label="Finish Setup" @click="finishOnboarding" />
+      <q-form @submit="saveOnboardingData" class="q-gutter-md">
+        <q-input v-model="username" label="Username" outlined :rules="[val => !!val || 'Username is required']" />
+
+        <q-input v-model="dateOfBirth" label="Date of Birth" outlined type="date"
+          :rules="[val => !!val || 'Date of birth is required']" />
+
+        <div class="q-mb-md">
+          <div class="text-subtitle1 q-mb-sm">Favorite Artists</div>
+          <div class="row items-center q-gutter-sm">
+            <q-input v-model="artistInput" label="Add an artist" outlined dense class="col" />
+            <q-btn color="primary" icon="add" round flat @click="addArtist" />
+          </div>
+
+          <div class="artists-container q-mt-md">
+            <q-chip v-for="(artist, index) in favoriteArtists" :key="index" removable color="primary" text-color="white"
+              @remove="removeArtist(index)">
+              {{ artist }}
+            </q-chip>
+            <div v-if="favoriteArtists.length === 0" class="text-grey-6">
+              Add some of your favorite artists to get started
+            </div>
+          </div>
+        </div>
+
+        <div class="q-mt-lg">
+          <q-btn type="submit" color="primary" label="Complete Setup" class="full-width" :loading="loading" />
+        </div>
+      </q-form>
     </div>
   </q-page>
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import axios from 'axios';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useQuasar } from 'quasar';
+import axios from 'axios';
+
+const router = useRouter();
+const $q = useQuasar();
 
 const username = ref('');
 const dateOfBirth = ref('');
-const step = ref(1);
-const selectedArtists = ref([]);
-const router = useRouter();
+const favoriteArtists = ref([]);
+const artistInput = ref('');
+const loading = ref(false);
 
-const artists = [
-  { name: "Billie Eilish", image: "/src/assets/images/billie.jpg" },
-  { name: "Dua Lipa", image: "/src/assets/images/dualipa.jpg" },
-  { name: "Ed Sheeran", image: "/src/assets/images/edsheeran.jpg" },
-  { name: "Tate McRae", image: "/src/assets/images/tate.jpg" },
-  { name: "The Weeknd", image: "/src/assets/images/weeknd.jpg" }
-];
-
-async function saveUserDetails() {
-  try {
-    await axios.post('http://localhost:5000/api/auth/save-user-details', {
-      username: username.value,
-      dateOfBirth: dateOfBirth.value
-    }, { withCredentials: true });
-
-    step.value = 2;
-  } catch (error) {
-    console.error('Failed to save user details:', error.response?.data || error.message);
+// Add artist to the list
+const addArtist = () => {
+  if (artistInput.value.trim()) {
+    favoriteArtists.value.push(artistInput.value.trim());
+    artistInput.value = '';
   }
-}
+};
 
-function toggleArtist(artist) {
-  if (selectedArtists.value.includes(artist)) {
-    selectedArtists.value = selectedArtists.value.filter(a => a !== artist);
-  } else {
-    selectedArtists.value.push(artist);
+// Remove artist from the list
+const removeArtist = (index) => {
+  favoriteArtists.value.splice(index, 1);
+};
+
+// Save onboarding data
+const saveOnboardingData = async () => {
+  if (favoriteArtists.value.length === 0) {
+    $q.notify({
+      color: 'negative',
+      message: 'Please add at least one favorite artist',
+      icon: 'warning'
+    });
+    return;
   }
-}
 
-async function finishOnboarding() {
+  loading.value = true;
+
   try {
-    await axios.post('http://localhost:5000/api/auth/save-onboarding-data', {
-      username: username.value,
-      dateOfBirth: dateOfBirth.value,
-      favoriteArtists: selectedArtists.value
-    }, { withCredentials: true });
+    await axios.post(
+      'http://localhost:5000/api/auth/onboarding',
+      {
+        username: username.value,
+        dateOfBirth: dateOfBirth.value,
+        favoriteArtists: favoriteArtists.value
+      },
+      { withCredentials: true }
+    );
 
+    $q.notify({
+      color: 'positive',
+      message: 'Profile setup complete!',
+      icon: 'check_circle'
+    });
+
+    // Redirect to dashboard
     router.push('/dashboard');
+
   } catch (error) {
-    console.error('Failed to complete onboarding:', error.response?.data || error.message);
+    console.error('Onboarding Error:', error.response?.data || error.message);
+    $q.notify({
+      color: 'negative',
+      message: error.response?.data?.message || 'Failed to save profile data',
+      icon: 'error'
+    });
+  } finally {
+    loading.value = false;
   }
-}
+};
+
+// Check if user is already authenticated
+onMounted(async () => {
+  try {
+    const response = await axios.get('http://localhost:5000/api/auth/profile', { withCredentials: true });
+
+    // Pre-fill form with existing data if available
+    if (response.data.user) {
+      const user = response.data.user;
+
+      username.value = user.username || '';
+      dateOfBirth.value = user.dateOfBirth || '';
+
+      // If user is not new, redirect to dashboard
+      if (!user.isNewUser) {
+        router.push('/dashboard');
+      }
+    }
+  } catch (error) {
+    console.error('Error checking auth status:', error);
+    // If not authenticated, redirect to login
+    if (error.response?.status === 401) {
+      router.push('/login');
+    }
+  }
+});
 </script>
 
 <style scoped>
 .onboarding-container {
-  text-align: center;
-  padding: 20px;
+  max-width: 600px;
+  width: 90%;
   background: white;
-  border-radius: 10px;
-  width: 400px;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
-.artist-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 10px;
-}
-
-.artist-card {
-  text-align: center;
+.artists-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 50px;
   padding: 10px;
-  background: #f9f9f9;
   border-radius: 8px;
-  cursor: pointer;
-  transition: 0.3s;
-}
-
-.artist-card.selected {
-  border: 2px solid #1db954;
-}
-
-.artist-img {
-  width: 100%;
-  height: auto;
-  border-radius: 8px;
+  background: #f5f5f5;
 }
 </style>
