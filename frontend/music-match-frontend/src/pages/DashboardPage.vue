@@ -3,6 +3,7 @@
     <div class="profile-container">
       <q-btn color="primary" flat label="Sign Out" class="sign-out-btn" icon="logout" @click="logout" />
 
+
       <div class="profile-header">
         <q-avatar size="100px" class="profile-img">
           <q-img v-if="userData.profileImage" :src="userData.profileImage" fit="cover" />
@@ -11,6 +12,9 @@
         <h1 class="profile-name">{{ userData.name || 'Guest' }}</h1>
         <p class="profile-email">{{ userData.email }}</p>
       </div>
+
+      <q-btn v-if="!userData.spotifyToken" color="green" label="Connect with Spotify" class="connect-spotify-btn"
+        icon="music_note" @click="connectSpotify" />
 
       <q-card class="info-card">
         <q-card-section>
@@ -37,7 +41,7 @@
           <div class="section">
             <h3 class="section-title">Spotify Top Artists</h3>
             <div v-if="spotifyData.topArtists?.length" class="grid">
-              <q-card v-for="artist in spotifyData.topArtists" :key="artist.id" class="spotify-card">
+              <q-card v-for="artist in spotifyData.topArtists || []" :key="artist.id" class="spotify-card">
                 <q-img :src="artist.images?.[0]?.url || 'https://via.placeholder.com/100'" class="spotify-img" />
                 <div class="spotify-overlay">
                   <p class="spotify-text">{{ artist.name }}</p>
@@ -52,11 +56,11 @@
           <div class="section">
             <h3 class="section-title">Spotify Top Songs</h3>
             <div v-if="spotifyData.topTracks?.length" class="grid">
-              <q-card v-for="track in spotifyData.topTracks" :key="track.id" class="spotify-card">
-                <q-img :src="track.album.images?.[0]?.url || 'https://via.placeholder.com/100'" class="spotify-img" />
+              <q-card v-for="track in spotifyData.topTracks || []" :key="track.id" class="spotify-card">
+                <q-img :src="track.album?.images?.[0]?.url || 'https://via.placeholder.com/100'" class="spotify-img" />
                 <div class="spotify-overlay">
                   <p class="spotify-text">{{ track.name }}</p>
-                  <p class="spotify-subtext">{{ track.artists[0].name }}</p>
+                  <p class="spotify-subtext">{{ track.artists?.[0]?.name || 'Unknown Artist' }}</p>
                 </div>
               </q-card>
             </div>
@@ -148,41 +152,36 @@ const loading = ref(false);
 const deleteConfirmOpen = ref(false);
 const deleteConfirmText = ref('');
 
+const connectSpotify = () => {
+  window.location.href = 'http://localhost:5000/api/auth/spotify';
+};
+
 async function fetchUserProfile() {
   loading.value = true;
   try {
     const res = await axios.get('http://localhost:5000/api/auth/profile', { withCredentials: true });
 
-    // Set user data with safe defaults
     userData.value = {
       id: res.data.user?.id || '',
       name: res.data.user?.name || 'Guest',
       username: res.data.user?.username || '',
       email: res.data.user?.email || '',
       profileImage: res.data.user?.profileImage || null,
-      favoriteArtists: res.data.user?.favoriteArtists || []
+      favoriteArtists: res.data.user?.favoriteArtists || [],
+      spotifyToken: res.data.user?.spotifyToken || null, // Check if Spotify is linked
     };
 
-    // Set Spotify data with safe defaults
     if (res.data.spotifyData) {
       spotifyData.value = {
         topArtists: res.data.spotifyData.topArtists || [],
         topTracks: res.data.spotifyData.topTracks || [],
-        currentPlayback: res.data.spotifyData.currentPlayback || null
+        currentPlayback: res.data.spotifyData.currentPlayback || null,
       };
     }
   } catch (error) {
     console.error('Failed to fetch profile:', error.response?.data || error.message);
-
-    // If unauthorized, redirect to login
     if (error.response?.status === 401) {
       router.push('/login');
-    } else {
-      $q.notify({
-        color: 'negative',
-        message: 'Failed to load profile data',
-        icon: 'error'
-      });
     }
   } finally {
     loading.value = false;

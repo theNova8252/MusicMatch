@@ -62,9 +62,10 @@ export const spotifyCallback = async (req, res) => {
     console.log('👤 Spotify User Data:', userData);
 
     let user = await User.findOne({ where: { email: userData.email } });
+
     if (!user) {
       user = await User.create({
-        name: userData.display_name,
+        name: userData.display_name || 'Spotify User',
         email: userData.email,
         spotifyToken: accessToken,
         profileImage: userData.images?.[0]?.url || null,
@@ -79,19 +80,17 @@ export const spotifyCallback = async (req, res) => {
     console.log('User Updated:', user);
 
     req.session.userId = user.id;
-    
-    // Redirect to onboarding if new user, otherwise to dashboard
-    if (user.isNewUser) {
-      res.redirect('http://localhost:9000/onboarding');
-    } else {
-      res.redirect('http://localhost:9000/dashboard');
-    }
+    req.session.save(); // Ensure session is saved before redirecting
+
+    // Redirect to appropriate page
+    res.redirect(
+      user.isNewUser ? 'http://localhost:9000/onboarding' : 'http://localhost:9000/dashboard',
+    );
   } catch (error) {
     console.error('Spotify Callback Error:', error.response?.data || error.message);
     res.status(500).send('Failed to authenticate with Spotify.');
   }
 };
-
 export const googleLogin = (req, res) => {
   const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.GOOGLE_CLIENT_ID}&response_type=code&redirect_uri=${process.env.GOOGLE_REDIRECT_URI}&scope=profile%20email`;
   res.redirect(googleAuthUrl);
@@ -157,120 +156,91 @@ export const googleCallback = async (req, res) => {
 
 export const saveOnboardingData = async (req, res) => {
   try {
-    const { username, dateOfBirth, favoriteArtists } = req.body;
-    const user = await User.findByPk(req.session.userId);
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+    if (!req.session.userId) {
+      return res.status(401).json({ message: 'Unauthorized: No session found.' });
     }
 
-    user.username = username;
-    user.dateOfBirth = dateOfBirth;
-    user.favoriteArtists = favoriteArtists.join(', ');
-    user.isNewUser = false; // Mark as not a new user after onboarding
+    const { username, dateOfBirth, favoriteArtists } = req.body;
+    const userId = req.session.userId;
+
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Update user details
+    user.username = username || user.username;
+    user.dateOfBirth = dateOfBirth || user.dateOfBirth;
+    user.favoriteArtists = Array.isArray(favoriteArtists) ? favoriteArtists.join(', ') : '';
+
     await user.save();
 
-    res.json({ 
-      message: 'Onboarding data saved successfully!', 
-      user,
-      redirectTo: '/dashboard' // Send redirect info to client
-    });
+    res.json({ success: true, message: 'Onboarding data saved successfully!' });
   } catch (error) {
-    console.error('Failed to save onboarding data:', error.message);
-    res.status(500).json({ message: 'Failed to save onboarding data.' });
+    console.error('Error saving onboarding data:', error);
+    res.status(500).json({ message: 'Failed to save onboarding data', error: error.message });
   }
 };
 
 export const getUserProfile = async (req, res) => {
   try {
-    // Check if user is authenticated
     if (!req.session || !req.session.userId) {
-      console.warn('No session found.');
       return res.status(401).json({ message: 'Unauthorized: No session found.' });
     }
 
-    // 🔍 Fetch user from database
     const user = await User.findByPk(req.session.userId);
     if (!user) {
-      console.warn('User not found for session ID:', req.session.userId);
       return res.status(404).json({ message: 'User not found.' });
     }
 
-    console.log('✅ User Found:', user);
-
-    // Prepare response data
     const response = {
       user: {
         id: user.id,
         name: user.name,
-        username: user.username,
-        email: user.email,
-        profileImage: user.profileImage,
-        dateOfBirth: user.dateOfBirth,
+        username: user.username || '',
+        email: user.email || '',
+        profileImage: user.profileImage || '',
+        dateOfBirth: user.dateOfBirth || '',
         favoriteArtists: user.favoriteArtists ? user.favoriteArtists.split(', ') : [],
-        isNewUser: user.isNewUser
+        isNewUser: user.isNewUser,
+        spotifyToken: user.spotifyToken || null,
       },
       spotifyData: {
         topArtists: [],
         topTracks: [],
-        currentPlayback: null
-      }
+        currentPlayback: null,
+      },
     };
 
-    // 🎫 If user has Spotify token, fetch Spotify data
     if (user.spotifyToken) {
       try {
         const token = user.spotifyToken;
-        
-        // 👤 Fetch Spotify Profile
-        const profileResponse = await axios.get('https://api.spotify.com/v1/me', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        
-        // 🎵 Fetch Top Artists
-        const topArtistsResponse = await axios.get(
-          'https://api.spotify.com/v1/me/top/artists?limit=10',
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
-        );
-        
-        // 🎶 Fetch Top Tracks
-        const topTracksResponse = await axios.get('https://api.spotify.com/v1/me/top/tracks?limit=10', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        
-        // ▶️ Fetch Current Playback (optional, ignore errors)
-        const playbackResponse = await axios
-          .get('https://api.spotify.com/v1/me/player', {
-            headers: { Authorization: `Bearer ${token}` },
-          })
-          .catch(() => null);
-        
-        // Add Spotify data to response
-        response.spotifyData = {
-          profile: profileResponse.data,
-          topArtists: topArtistsResponse.data.items,
-          topTracks: topTracksResponse.data.items,
-          currentPlayback: playbackResponse?.data || null,
-        };
-      } catch (spotifyError) {
-        console.error('Failed to fetch Spotify data:', spotifyError.message);
-        // Continue with the response even if Spotify data fetch fails
+        const headers = { Authorization: `Bearer ${token}` };
+
+        const [profileRes, topArtistsRes, topTracksRes, playbackRes] = await Promise.all([
+          axios.get('https://api.spotify.com/v1/me', { headers }).catch(() => null),
+          axios
+            .get('https://api.spotify.com/v1/me/top/artists?limit=10', { headers })
+            .catch(() => null),
+          axios
+            .get('https://api.spotify.com/v1/me/top/tracks?limit=10', { headers })
+            .catch(() => null),
+          axios.get('https://api.spotify.com/v1/me/player', { headers }).catch(() => null),
+        ]);
+
+        response.spotifyData.profile = profileRes?.data || null;
+        response.spotifyData.topArtists = topArtistsRes?.data?.items || [];
+        response.spotifyData.topTracks = topTracksRes?.data?.items || [];
+        response.spotifyData.currentPlayback = playbackRes?.data || null;
+      } catch (error) {
+        console.error('Spotify API error:', error.message);
       }
     }
 
-    // 📤 Send Response
     res.json(response);
   } catch (error) {
-    // ❌ Error Handling
-    if (error.response) {
-      console.error('❌ API Error:', error.response.data);
-      return res.status(error.response.status).json(error.response.data);
-    } else {
-      console.error('❌ Unexpected Error:', error.message);
-      return res.status(500).json({ message: 'Failed to fetch user profile.' });
-    }
+    console.error('Unexpected error:', error.message);
+    res.status(500).json({ message: 'Failed to fetch user profile.' });
   }
 };
 

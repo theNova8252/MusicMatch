@@ -65,17 +65,7 @@ const removeArtist = (index) => {
 
 // Save onboarding data
 const saveOnboardingData = async () => {
-  if (favoriteArtists.value.length === 0) {
-    $q.notify({
-      color: 'negative',
-      message: 'Please add at least one favorite artist',
-      icon: 'warning'
-    });
-    return;
-  }
-
   loading.value = true;
-
   try {
     await axios.post(
       'http://localhost:5000/api/auth/save-onboarding-data',
@@ -87,22 +77,16 @@ const saveOnboardingData = async () => {
       { withCredentials: true }
     );
 
-    $q.notify({
-      color: 'positive',
-      message: 'Profile setup complete!',
-      icon: 'check_circle'
-    });
+    $q.notify({ color: 'positive', message: 'Profile setup complete!' });
 
-    // Redirect to dashboard
-    router.push('/dashboard');
-
+    // Ensure isNewUser is false after onboarding
+    const res = await axios.get('http://localhost:5000/api/auth/profile', { withCredentials: true });
+    if (res.data.user) {
+      router.push('/dashboard');
+    }
   } catch (error) {
     console.error('Onboarding Error:', error.response?.data || error.message);
-    $q.notify({
-      color: 'negative',
-      message: error.response?.data?.message || 'Failed to save profile data',
-      icon: 'error'
-    });
+    $q.notify({ color: 'negative', message: 'Failed to save profile data' });
   } finally {
     loading.value = false;
   }
