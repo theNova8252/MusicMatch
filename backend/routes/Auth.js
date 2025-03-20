@@ -9,7 +9,8 @@ import {
   logoutUser,
   saveUserDetails,
   fetchSpotifyArtists,
-  saveOnboardingData
+  saveOnboardingData,
+  deleteAccount
 } from '../controllers/authController.js'; // ✅ Import all required functions
 import authMiddleware from '../middleware/authMiddleware.js';
 import User from '../models/User.js';
@@ -51,7 +52,7 @@ router.get('/logout', logoutUser);
 router.post('/save-user-details', saveUserDetails);
 router.get('/fetch-spotify-artists', authMiddleware, fetchSpotifyArtists);
 router.post('/onboarding', authMiddleware, saveOnboardingData);
-
+router.delete('/delete-account', authMiddleware, deleteAccount);
 
 router.post('/add-artist', authMiddleware, addCustomArtist);
 

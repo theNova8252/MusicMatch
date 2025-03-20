@@ -79,9 +79,45 @@
               <q-icon name="music_note" size="24px" class="now-playing-icon" />
             </q-card>
           </div>
+
+          <q-separator class="section-divider" />
+
+          <div class="section">
+            <h3 class="section-title">Account Settings</h3>
+            <div class="account-actions">
+              <q-btn color="negative" label="Delete Account" class="delete-account-btn" icon="delete_forever"
+                @click="confirmDeleteAccount" />
+            </div>
+          </div>
         </q-card-section>
       </q-card>
     </div>
+
+    <!-- Delete Account Confirmation Dialog -->
+    <q-dialog v-model="deleteConfirmOpen" persistent>
+      <q-card class="delete-dialog">
+        <q-card-section class="row items-center">
+          <q-avatar icon="warning" color="negative" text-color="white" />
+          <span class="q-ml-sm">Delete Account</span>
+        </q-card-section>
+
+        <q-card-section>
+          <p>Are you sure you want to delete your account? This action cannot be undone and will permanently remove all
+            your data including profile information, favorite artists, and application settings.</p>
+        </q-card-section>
+
+        <q-card-section>
+          <q-input v-model="deleteConfirmText" label="Type 'DELETE' to confirm" outlined dense
+            :rules="[val => val === 'DELETE' || 'Please type DELETE to confirm']" />
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" color="primary" v-close-popup />
+          <q-btn flat label="Delete Account" color="negative" :disabled="deleteConfirmText !== 'DELETE'"
+            @click="deleteAccount" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -109,6 +145,8 @@ const spotifyData = ref({
 
 const customArtist = ref('');
 const loading = ref(false);
+const deleteConfirmOpen = ref(false);
+const deleteConfirmText = ref('');
 
 async function fetchUserProfile() {
   loading.value = true;
@@ -197,7 +235,6 @@ async function removeArtist(artist) {
   });
 }
 
-// Replace your current logout function with this:
 async function logout() {
   try {
     await axios.get('http://localhost:5000/api/auth/logout', { withCredentials: true });
@@ -224,6 +261,23 @@ async function logout() {
   } catch (error) {
     console.error('Failed to log out:', error);
     alert('Failed to log out');
+  }
+}
+
+function confirmDeleteAccount() {
+  deleteConfirmText.value = '';
+  deleteConfirmOpen.value = true;
+}
+
+async function deleteAccount() {
+  try {
+    await axios.delete('http://localhost:5000/api/auth/delete-account', { withCredentials: true });
+
+    // Redirect to login
+    router.push('/login');
+  } catch (error) {
+    console.error('Failed to delete account:', error.response?.data || error.message);
+    alert("Failed to delete account: " + (error.response?.data?.message || error.message));
   }
 }
 
@@ -461,5 +515,26 @@ onMounted(() => {
   text-align: center;
   font-style: italic;
   margin: 20px 0;
+}
+
+/* Account settings section */
+.account-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.delete-account-btn {
+  transition: all 0.2s ease;
+}
+
+.delete-account-btn:hover {
+  background: #d32f2f !important;
+}
+
+/* Delete dialog */
+.delete-dialog {
+  width: 400px;
+  max-width: 90vw;
 }
 </style>

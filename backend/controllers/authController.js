@@ -9,6 +9,26 @@ const generateToken = (user) => {
   return jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
 
+export const deleteAccount = async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(400).json({ success: false, message: 'User not authenticated' });
+    }
+
+    const userId = req.user.id;
+    await User.destroy({ where: { id: userId } });
+
+    req.session.destroy(() => {
+      res.clearCookie('connect.sid');
+      return res.json({ success: true, message: 'Account deleted successfully' });
+    });
+  } catch (error) {
+    console.error('Error deleting account:', error.message);
+    res
+      .status(500)
+      .json({ success: false, message: 'Error deleting account', error: error.message });
+  }
+};
 export const spotifyLogin = (req, res) => {
   const spotifyAuthUrl = `https://accounts.spotify.com/authorize?client_id=${process.env.SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri=${process.env.SPOTIFY_REDIRECT_URI}&scope=user-read-private user-read-email user-top-read user-read-currently-playing`;
   res.redirect(spotifyAuthUrl);
