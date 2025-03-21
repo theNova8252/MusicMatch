@@ -30,7 +30,23 @@ export const deleteAccount = async (req, res) => {
   }
 };
 export const spotifyLogin = (req, res) => {
-  const spotifyAuthUrl = `https://accounts.spotify.com/authorize?client_id=${process.env.SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri=${process.env.SPOTIFY_REDIRECT_URI}&scope=user-read-private user-read-email user-top-read user-read-currently-playing`;
+  const scopes = [
+    'user-read-private',
+    'user-read-email',
+    'user-top-read',
+    'user-read-currently-playing',
+  ].join(' ');
+  console.log('SPOTIFY_CLIENT_ID:', process.env.SPOTIFY_CLIENT_ID);
+  console.log('SPOTIFY_CLIENT_SECRET:', process.env.SPOTIFY_CLIENT_SECRET);
+  console.log('SPOTIFY_REDIRECT_URI:', process.env.SPOTIFY_REDIRECT_URI);
+
+  const spotifyAuthUrl = `https://accounts.spotify.com/authorize?client_id=${
+    process.env.SPOTIFY_CLIENT_ID
+  }&response_type=code&redirect_uri=${encodeURIComponent(
+    process.env.SPOTIFY_REDIRECT_URI,
+  )}&scope=${encodeURIComponent(scopes)}`;
+
+  console.log('🔗 Redirecting to Spotify Auth URL:', spotifyAuthUrl);
   res.redirect(spotifyAuthUrl);
 };
 
@@ -52,7 +68,7 @@ export const spotifyCallback = async (req, res) => {
     );
 
     const accessToken = tokenResponse.data.access_token;
-    console.log('🔑 Spotify Access Token:', accessToken);
+    console.log('🔑 Successfully received Spotify Access Token:', accessToken);
 
     const userResponse = await axios.get('https://api.spotify.com/v1/me', {
       headers: { Authorization: `Bearer ${accessToken}` },
@@ -79,18 +95,96 @@ export const spotifyCallback = async (req, res) => {
 
     console.log('User Updated:', user);
 
+    // **Ensure session is saved**
     req.session.userId = user.id;
-    req.session.save(); // Ensure session is saved before redirecting
-
-    // Redirect to appropriate page
-    res.redirect(
-      user.isNewUser ? 'http://localhost:9000/onboarding' : 'http://localhost:9000/dashboard',
-    );
+    req.session.save((err) => {
+      if (err) {
+        console.error('❌ Session Save Error:', err);
+      }
+      console.log('✅ Session Saved Successfully:', req.session);
+      res.redirect(
+        user.isNewUser ? 'http://localhost:9000/onboarding' : 'http://localhost:9000/dashboard',
+      );
+    });
   } catch (error) {
-    console.error('Spotify Callback Error:', error.response?.data || error.message);
+      console.log('🔥 SPOTIFY CALLBACK ERROR:', error.response?.data || error.message);
     res.status(500).send('Failed to authenticate with Spotify.');
   }
 };
+export async function getSpotifyToken(req, res) {
+  const { code } = req.body; // The authorization code received from frontend
+  const redirectUri = 'http://localhost:5000/api/auth/spotify/callback'; // Must match Spotify Developer settings
+
+  if (!code) {
+    return res.status(400).json({ error: 'Authorization code is required.' });
+  }
+
+  try {
+    const response = await axios.post(
+      'https://accounts.spotify.com/api/token',
+      new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: code,
+        redirect_uri: redirectUri,
+        client_id: process.env.SPOTIFY_CLIENT_ID,
+        client_secret: process.env.SPOTIFY_CLIENT_SECRET,
+      }).toString(),
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      },
+    );
+
+    const { access_token, refresh_token, expires_in } = response.data;
+
+    // Store the token in the session or database
+    req.session.spotifyAccessToken = access_token;
+    req.session.spotifyRefreshToken = refresh_token;
+    req.session.spotifyTokenExpires = Date.now() + expires_in * 1000;
+
+    res.json({ access_token, refresh_token, expires_in });
+  } catch (error) {
+    console.error('Spotify Token Exchange Error:', error.response?.data || error.message);
+    res.status(400).json({ error: 'Failed to exchange authorization code for access token.' });
+  }
+}
+
+export async function refreshSpotifyToken(req, res) {
+  const refreshToken = req.session.spotifyRefreshToken; // Retrieve refresh token from session
+
+  if (!refreshToken) {
+    return res.status(401).json({ error: 'No refresh token available.' });
+  }
+
+  try {
+    const response = await axios.post(
+      'https://accounts.spotify.com/api/token',
+      new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+        client_id: process.env.SPOTIFY_CLIENT_ID,
+        client_secret: process.env.SPOTIFY_CLIENT_SECRET,
+      }).toString(),
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      },
+    );
+
+    const { access_token, expires_in } = response.data;
+
+    // Update session with new token
+    req.session.spotifyAccessToken = access_token;
+    req.session.spotifyTokenExpires = Date.now() + expires_in * 1000;
+
+    res.json({ access_token, expires_in });
+  } catch (error) {
+    console.error('Spotify Refresh Token Error:', error.response?.data || error.message);
+    res.status(400).json({ error: 'Failed to refresh Spotify access token.' });
+  }
+}
 export const googleLogin = (req, res) => {
   const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.GOOGLE_CLIENT_ID}&response_type=code&redirect_uri=${process.env.GOOGLE_REDIRECT_URI}&scope=profile%20email`;
   res.redirect(googleAuthUrl);
@@ -101,13 +195,17 @@ export const googleCallback = async (req, res) => {
   if (!code) return res.status(400).send('No authorization code provided.');
 
   try {
-    const tokenResponse = await axios.post('https://oauth2.googleapis.com/token', {
-      code,
-      client_id: process.env.GOOGLE_CLIENT_ID,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET,
-      redirect_uri: process.env.GOOGLE_REDIRECT_URI,
-      grant_type: 'authorization_code',
-    });
+    const tokenResponse = await axios.post(
+      'https://accounts.spotify.com/api/token',
+      new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: process.env.SPOTIFY_REDIRECT_URI, // MUST match Spotify dashboard
+        client_id: process.env.SPOTIFY_CLIENT_ID,
+        client_secret: process.env.SPOTIFY_CLIENT_SECRET,
+      }).toString(),
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } },
+    );
 
     const accessToken = tokenResponse.data.access_token;
 

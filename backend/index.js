@@ -11,8 +11,8 @@ import chatRoutes from './routes/chat.js';
 import sequelize from './config/db.js';
 import path from 'path';
 
-dotenv.config({path: path.resolve("./backend/", '.env')});
-//dotenv.config();
+
+dotenv.config();
 console.log("DB_PASSWORD:", process.env.DB_PASS, typeof process.env.DB_PASS);
 
 

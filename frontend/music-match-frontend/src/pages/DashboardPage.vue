@@ -314,6 +314,7 @@ const deleteAccount = async () => {
   }
 };
 
+
 const logout = () => {
   logoutDialog.value = true;
 };
@@ -336,7 +337,6 @@ const signOut = async () => {
     console.error('Failed to sign out:', error.response?.data || error.message);
   }
 };
-
 async function fetchUserProfile() {
   try {
     const res = await axios.get('http://localhost:5000/api/auth/profile', { withCredentials: true });

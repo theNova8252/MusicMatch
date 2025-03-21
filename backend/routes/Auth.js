@@ -11,6 +11,8 @@ import {
   fetchSpotifyArtists,
   saveOnboardingData,
   deleteAccount,
+  getSpotifyToken,
+  refreshSpotifyToken
 } from '../controllers/authController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 import User from '../models/User.js';
@@ -38,19 +40,8 @@ router.delete('/delete-account', authMiddleware, deleteAccount);
 router.post('/update-account', authMiddleware, saveUserDetails);
 router.post('/add-artist', authMiddleware, addCustomArtist);
 
-router.get('/spotify/token', authMiddleware, async (req, res) => {
-  try {
-    const user = await User.findByPk(req.session.userId);
-    if (!user || !user.spotifyToken) {
-      return res.status(404).json({ message: 'Spotify token not found.' });
-    }
+router.post("/spotify/token", getSpotifyToken);  // Route to exchange code for access token
+router.post("/spotify/refresh", refreshSpotifyToken); // Route to refresh token
 
-    console.log('Retrieved Spotify Token:', user.spotifyToken);
-    res.json({ token: user.spotifyToken });
-  } catch (error) {
-    console.error('Failed to fetch Spotify token:', error.message);
-    res.status(500).json({ message: 'Failed to fetch token.' });
-  }
-});
 
 export default router;
