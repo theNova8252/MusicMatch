@@ -1,124 +1,271 @@
 <template>
-  <q-page class="flex flex-center column">
-    <div class="profile-container">
-      <q-btn color="primary" flat label="Sign Out" class="sign-out-btn" icon="logout" @click="logout" />
-
-
-      <div class="profile-header">
-        <q-avatar size="100px" class="profile-img">
-          <q-img v-if="userData.profileImage" :src="userData.profileImage" fit="cover" />
-          <q-icon v-else name="person" size="64px" color="grey-4" />
-        </q-avatar>
-        <h1 class="profile-name">{{ userData.name || 'Guest' }}</h1>
-        <p class="profile-email">{{ userData.email }}</p>
+  <q-page class="profile-page">
+    <div class="blur-bg"></div>
+    <div class="profile-container q-pa-md">
+      <!-- Top Navigation Bar -->
+      <div class="nav-bar q-mb-lg">
+        <h4 class="text-weight-bold q-my-none text-white">MusicMatch</h4>
+        <q-btn flat round color="white" icon="logout" @click="logout">
+          <q-tooltip>Sign Out</q-tooltip>
+        </q-btn>
       </div>
 
-      <q-btn v-if="!userData.spotifyToken" color="green" label="Connect with Spotify" class="connect-spotify-btn"
-        icon="music_note" @click="connectSpotify" />
+      <!-- Profile Header Section -->
+      <div class="profile-header q-mb-xl">
+        <div class="profile-header-content">
+          <q-avatar size="120px" class="profile-avatar">
+            <q-img v-if="userData.profileImage" :src="userData.profileImage" />
+            <div v-else class="text-center full-width full-height flex flex-center bg-primary text-white text-h2">
+              {{ (userData.username || 'G').charAt(0).toUpperCase() }}
+            </div>
+          </q-avatar>
+          <div class="profile-info q-ml-md">
+            <h2 class="text-weight-bold text-white q-my-sm">{{ userData.username || 'Guest' }}</h2>
+            <p class="text-grey-4 q-my-sm">{{ userData.email }}</p>
+            <q-btn v-if="!userData.spotifyToken" unelevated rounded color="green" class="q-mt-sm spotify-btn"
+              label="Connect Spotify" icon="fab fa-spotify" @click="connectSpotify" />
+          </div>
+        </div>
+      </div>
 
-      <q-card class="info-card">
-        <q-card-section>
-          <div class="section">
+      <!-- Main Content Area -->
+      <div class="content-area">
+        <!-- Account Info Section -->
+        <q-card class="profile-card q-mb-md">
+          <q-card-section>
             <div class="section-header">
-              <h3 class="section-title">Favorite Artists</h3>
-              <div class="artist-input">
-                <q-input v-model="customArtist" label="Add artist" dense outlined class="artist-field" />
-                <q-btn icon="add" round flat color="primary" size="sm" @click="addArtist" />
+              <h5 class="text-weight-bold q-my-none">Account Information</h5>
+              <q-btn flat round color="primary" icon="edit" size="sm">
+                <q-tooltip>Edit Profile</q-tooltip>
+              </q-btn>
+            </div>
+
+            <div class="row q-col-gutter-md q-mt-md">
+              <div class="col-12 col-md-6">
+                <q-input v-model="userData.username" outlined bg-color="grey-1" dense label="Username">
+                  <template v-slot:prepend>
+                    <q-icon name="person" />
+                  </template>
+                </q-input>
+              </div>
+              <div class="col-12 col-md-6">
+                <q-input v-model="userData.email" outlined bg-color="grey-1" dense label="Email">
+                  <template v-slot:prepend>
+                    <q-icon name="email" />
+                  </template>
+                </q-input>
+              </div>
+              <div class="col-12 col-md-6">
+                <q-input v-model="userData.dateOfBirth" outlined bg-color="grey-1" dense label="Date of Birth"
+                  type="date">
+                  <template v-slot:prepend>
+                    <q-icon name="cake" />
+                  </template>
+                </q-input>
+              </div>
+              <div class="col-12 col-md-6">
+                <q-file v-model="profileImageFile" outlined bg-color="grey-1" dense label="Profile Picture"
+                  @change="uploadProfileImage">
+                  <template v-slot:prepend>
+                    <q-icon name="add_photo_alternate" />
+                  </template>
+                </q-file>
               </div>
             </div>
 
-            <div v-if="userData.favoriteArtists?.length" class="artist-list">
-              <q-chip v-for="artist in userData.favoriteArtists" :key="artist" class="artist-chip" color="primary"
-                text-color="white" removable @remove="removeArtist(artist)">
+            <div class="row justify-end q-mt-md">
+              <q-btn color="primary" label="Save Changes" @click="updateAccountInfo" />
+            </div>
+          </q-card-section>
+        </q-card>
+
+        <!-- Favorite Artists Section -->
+        <q-card class="profile-card q-mb-md">
+          <q-card-section>
+            <div class="section-header">
+              <h5 class="text-weight-bold q-my-none">Favorite Artists</h5>
+              <q-btn flat round color="primary" icon="playlist_add" size="sm">
+                <q-tooltip>Add from recommendations</q-tooltip>
+              </q-btn>
+            </div>
+
+            <div class="artist-input q-mt-md">
+              <q-input v-model="customArtist" outlined bg-color="grey-1" dense label="Add artist"
+                placeholder="Add an artist you love">
+                <template v-slot:append>
+                  <q-btn round flat color="primary" icon="add" @click="addArtist" :disable="!customArtist.trim()" />
+                </template>
+              </q-input>
+            </div>
+
+            <div class="artist-chips q-mt-md">
+              <q-chip v-for="artist in userData.favoriteArtists" :key="artist" removable dense color="primary"
+                text-color="white" class="q-ma-xs" @remove="removeArtist(artist)">
                 {{ artist }}
               </q-chip>
-            </div>
-            <p v-else class="empty-state">No favorite artists added yet.</p>
-          </div>
-
-          <q-separator class="section-divider" />
-
-          <div class="section">
-            <h3 class="section-title">Spotify Top Artists</h3>
-            <div v-if="spotifyData.topArtists?.length" class="grid">
-              <q-card v-for="artist in spotifyData.topArtists || []" :key="artist.id" class="spotify-card">
-                <q-img :src="artist.images?.[0]?.url || 'https://via.placeholder.com/100'" class="spotify-img" />
-                <div class="spotify-overlay">
-                  <p class="spotify-text">{{ artist.name }}</p>
-                </div>
-              </q-card>
-            </div>
-            <p v-else class="empty-state">No top artists found.</p>
-          </div>
-
-          <q-separator class="section-divider" />
-
-          <div class="section">
-            <h3 class="section-title">Spotify Top Songs</h3>
-            <div v-if="spotifyData.topTracks?.length" class="grid">
-              <q-card v-for="track in spotifyData.topTracks || []" :key="track.id" class="spotify-card">
-                <q-img :src="track.album?.images?.[0]?.url || 'https://via.placeholder.com/100'" class="spotify-img" />
-                <div class="spotify-overlay">
-                  <p class="spotify-text">{{ track.name }}</p>
-                  <p class="spotify-subtext">{{ track.artists?.[0]?.name || 'Unknown Artist' }}</p>
-                </div>
-              </q-card>
-            </div>
-            <p v-else class="empty-state">No top tracks found.</p>
-          </div>
-
-          <q-separator v-if="spotifyData.currentPlayback" class="section-divider" />
-
-          <div class="section" v-if="spotifyData.currentPlayback">
-            <h3 class="section-title">Now Playing</h3>
-            <q-card class="now-playing-card">
-              <q-img
-                :src="spotifyData.currentPlayback.item?.album.images?.[0]?.url || 'https://via.placeholder.com/100'"
-                class="now-playing-img" />
-              <div class="now-playing-info">
-                <p class="now-playing-title">{{ spotifyData.currentPlayback.item?.name || 'Unknown' }}</p>
-                <p class="now-playing-artist">{{ spotifyData.currentPlayback.item?.artists?.[0]?.name || 'Unknown' }}
-                </p>
+              <div v-if="!userData.favoriteArtists?.length" class="empty-state text-grey q-py-md text-center">
+                No favorite artists added yet. Add some artists you love!
               </div>
-              <q-icon name="music_note" size="24px" class="now-playing-icon" />
+            </div>
+          </q-card-section>
+        </q-card>
+
+        <!-- Spotify Integration -->
+        <div class="row q-col-gutter-md">
+          <div class="col-12 col-md-6">
+            <q-card class="profile-card">
+              <q-card-section>
+                <div class="section-header">
+                  <h5 class="text-weight-bold q-my-none">Spotify Top Artists</h5>
+                  <q-btn flat round color="primary" icon="refresh" size="sm">
+                    <q-tooltip>Refresh</q-tooltip>
+                  </q-btn>
+                </div>
+
+                <div class="spotify-content q-mt-md">
+                  <div v-if="spotifyData.topArtists?.length" class="artist-grid">
+                    <div v-for="artist in spotifyData.topArtists" :key="artist.id" class="artist-item">
+                      <q-img :src="artist.images?.[0]?.url || 'https://via.placeholder.com/100'" class="artist-img" />
+                      <div class="artist-name">{{ artist.name }}</div>
+                    </div>
+                  </div>
+                  <div v-else class="empty-state text-grey q-py-lg text-center">
+                    <q-icon name="music_note" size="48px" color="grey-6" />
+                    <div class="q-mt-sm">Connect your Spotify account to see your top artists</div>
+                  </div>
+                </div>
+              </q-card-section>
             </q-card>
           </div>
 
-          <q-separator class="section-divider" />
+          <div class="col-12 col-md-6">
+            <q-card class="profile-card">
+              <q-card-section>
+                <div class="section-header">
+                  <h5 class="text-weight-bold q-my-none">Spotify Top Songs</h5>
+                  <q-btn flat round color="primary" icon="refresh" size="sm">
+                    <q-tooltip>Refresh</q-tooltip>
+                  </q-btn>
+                </div>
 
-          <div class="section">
-            <h3 class="section-title">Account Settings</h3>
-            <div class="account-actions">
-              <q-btn color="negative" label="Delete Account" class="delete-account-btn" icon="delete_forever"
-                @click="confirmDeleteAccount" />
-            </div>
+                <div class="spotify-content q-mt-md">
+                  <div v-if="spotifyData.topTracks?.length" class="tracks-list">
+                    <q-list separator>
+                      <q-item v-for="track in spotifyData.topTracks" :key="track.id" class="track-item">
+                        <q-item-section avatar>
+                          <q-avatar square>
+                            <q-img :src="track.album?.images?.[0]?.url || 'https://via.placeholder.com/50'" />
+                          </q-avatar>
+                        </q-item-section>
+                        <q-item-section>
+                          <q-item-label>{{ track.name }}</q-item-label>
+                          <q-item-label caption>{{ track.artists?.[0]?.name || 'Unknown Artist' }}</q-item-label>
+                        </q-item-section>
+                        <q-item-section side>
+                          <q-btn flat round size="sm" color="grey-6" icon="play_arrow">
+                            <q-tooltip>Play on Spotify</q-tooltip>
+                          </q-btn>
+                        </q-item-section>
+                      </q-item>
+                    </q-list>
+                  </div>
+                  <div v-else class="empty-state text-grey q-py-lg text-center">
+                    <q-icon name="queue_music" size="48px" color="grey-6" />
+                    <div class="q-mt-sm">Connect your Spotify account to see your top tracks</div>
+                  </div>
+                </div>
+              </q-card-section>
+            </q-card>
           </div>
-        </q-card-section>
-      </q-card>
+        </div>
+
+        <!-- Account Settings Section -->
+        <q-card class="profile-card q-mt-md">
+          <q-card-section>
+            <div class="section-header">
+              <h5 class="text-weight-bold q-my-none">Account Settings</h5>
+            </div>
+
+            <div class="account-settings q-mt-md">
+              <q-list>
+                <q-item clickable v-ripple>
+                  <q-item-section avatar>
+                    <q-icon name="notifications" color="primary" />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>Notification Preferences</q-item-label>
+                    <q-item-label caption>Manage how you receive notifications</q-item-label>
+                  </q-item-section>
+                  <q-item-section side>
+                    <q-icon name="chevron_right" color="grey-6" />
+                  </q-item-section>
+                </q-item>
+
+                <q-item clickable v-ripple>
+                  <q-item-section avatar>
+                    <q-icon name="security" color="primary" />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>Privacy & Security</q-item-label>
+                    <q-item-label caption>Manage your account security settings</q-item-label>
+                  </q-item-section>
+                  <q-item-section side>
+                    <q-icon name="chevron_right" color="grey-6" />
+                  </q-item-section>
+                </q-item>
+
+                <q-item clickable v-ripple>
+                  <q-item-section avatar>
+                    <q-icon name="delete" color="negative" />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label class="text-negative">Delete Account</q-item-label>
+                    <q-item-label caption>Permanently delete your account and data</q-item-label>
+                  </q-item-section>
+                  <q-item-section side>
+                    <q-btn unelevated color="negative" size="sm" label="Delete" @click="confirmDeleteAccount" />
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </div>
+          </q-card-section>
+        </q-card>
+      </div>
     </div>
 
-    <!-- Delete Account Confirmation Dialog -->
-    <q-dialog v-model="deleteConfirmOpen" persistent>
-      <q-card class="delete-dialog">
+    <!-- Dialogs -->
+    <q-dialog v-model="deleteDialog" persistent>
+      <q-card>
         <q-card-section class="row items-center">
           <q-avatar icon="warning" color="negative" text-color="white" />
-          <span class="q-ml-sm">Delete Account</span>
+          <span class="q-ml-sm text-h6">Confirm Deletion</span>
         </q-card-section>
 
         <q-card-section>
-          <p>Are you sure you want to delete your account? This action cannot be undone and will permanently remove all
-            your data including profile information, favorite artists, and application settings.</p>
-        </q-card-section>
-
-        <q-card-section>
-          <q-input v-model="deleteConfirmText" label="Type 'DELETE' to confirm" outlined dense
-            :rules="[val => val === 'DELETE' || 'Please type DELETE to confirm']" />
+          Are you sure you want to permanently delete your account? This action cannot be undone.
         </q-card-section>
 
         <q-card-actions align="right">
           <q-btn flat label="Cancel" color="primary" v-close-popup />
-          <q-btn flat label="Delete Account" color="negative" :disabled="deleteConfirmText !== 'DELETE'"
-            @click="deleteAccount" />
+          <q-btn flat label="Delete Account" color="negative" @click="deleteAccount" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="logoutDialog" persistent>
+      <q-card>
+        <q-card-section class="row items-center">
+          <q-avatar icon="logout" color="primary" text-color="white" />
+          <span class="q-ml-sm text-h6">Sign Out</span>
+        </q-card-section>
+
+        <q-card-section>
+          Are you sure you want to sign out?
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" color="primary" v-close-popup />
+          <q-btn flat label="Sign Out" color="primary" @click="signOut" v-close-popup />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -127,18 +274,17 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import axios from 'axios';
 
-const router = useRouter();
 const $q = useQuasar();
 
 const userData = ref({
-  name: '',
+  username: '',
   email: '',
   profileImage: null,
-  favoriteArtists: []
+  dateOfBirth: '',
+  favoriteArtists: ['Billie Eilish', 'Dua Lipa', 'Ed Sheeran', 'Tate McRae', 'The Weeknd']
 });
 
 const spotifyData = ref({
@@ -148,43 +294,106 @@ const spotifyData = ref({
 });
 
 const customArtist = ref('');
-const loading = ref(false);
-const deleteConfirmOpen = ref(false);
-const deleteConfirmText = ref('');
+const profileImageFile = ref(null);
+const deleteDialog = ref(false);
+const logoutDialog = ref(false);
+
+const removeArtist = (artist) => {
+  userData.value.favoriteArtists = userData.value.favoriteArtists.filter(a => a !== artist);
+  $q.notify({
+    color: 'info',
+    message: `Removed ${artist} from favorites`,
+    position: 'bottom-right',
+    timeout: 2000
+  });
+};
 
 const connectSpotify = () => {
   window.location.href = 'http://localhost:5000/api/auth/spotify';
 };
 
+const confirmDeleteAccount = () => {
+  deleteDialog.value = true;
+};
+
+const deleteAccount = async () => {
+  try {
+    const response = await axios.delete('http://localhost:5000/api/auth/delete-account', {
+      withCredentials: true,  
+    });
+
+    console.log('Delete account response:', response.data);
+
+    $q.notify({
+      color: 'negative',
+      message: 'Account deleted successfully',
+      position: 'center',
+      timeout: 2000
+    });
+
+    window.location.href = '/login';
+  } catch (error) {
+    console.error('Failed to delete account:', error.response?.data || error.message);
+
+    $q.notify({
+      color: 'negative',
+      message: 'Failed to delete account',
+      position: 'center',
+      timeout: 2000
+    });
+  }
+};
+
+const logout = () => {
+  logoutDialog.value = true;
+};
+
+const signOut = async () => {
+  try {
+    await axios.get('http://localhost:5000/api/auth/logout', { withCredentials: true });
+
+    // 🚀 Completely clear frontend storage
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // 🚀 Manually delete all cookies
+    document.cookie.split(";").forEach((c) => {
+      document.cookie = c
+        .replace(/^ +/, "")
+        .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+    });
+
+    // 🚀 Force a hard page reload to ensure no lingering Vue state
+    window.location.href = '/login';
+  } catch (error) {
+    console.error('Failed to sign out:', error.response?.data || error.message);
+  }
+};
+
 async function fetchUserProfile() {
-  loading.value = true;
   try {
     const res = await axios.get('http://localhost:5000/api/auth/profile', { withCredentials: true });
 
+    console.log("📥 User Data Fetched:", res.data);
+
     userData.value = {
       id: res.data.user?.id || '',
-      name: res.data.user?.name || 'Guest',
-      username: res.data.user?.username || '',
+      username: res.data.user?.name || 'Guest',  // 🔥 Fix: Use `name` from DB
       email: res.data.user?.email || '',
       profileImage: res.data.user?.profileImage || null,
-      favoriteArtists: res.data.user?.favoriteArtists || [],
-      spotifyToken: res.data.user?.spotifyToken || null, // Check if Spotify is linked
+      dateOfBirth: res.data.user?.dateOfBirth || '',
+      favoriteArtists: res.data.user?.favoriteArtists || []
     };
 
-    if (res.data.spotifyData) {
-      spotifyData.value = {
-        topArtists: res.data.spotifyData.topArtists || [],
-        topTracks: res.data.spotifyData.topTracks || [],
-        currentPlayback: res.data.spotifyData.currentPlayback || null,
-      };
-    }
+    // 🎵 Store Spotify data
+    spotifyData.value = {
+      topArtists: res.data.spotifyData?.topArtists || [],
+      topTracks: res.data.spotifyData?.topTracks || [],
+      currentPlayback: res.data.spotifyData?.currentPlayback || null
+    };
+
   } catch (error) {
-    console.error('Failed to fetch profile:', error.response?.data || error.message);
-    if (error.response?.status === 401) {
-      router.push('/login');
-    }
-  } finally {
-    loading.value = false;
+    console.error('❌ Failed to fetch profile:', error.response?.data || error.message);
   }
 }
 
@@ -192,348 +401,224 @@ async function addArtist() {
   if (!customArtist.value.trim()) return;
 
   try {
-    await axios.post(
-      'http://localhost:5000/api/auth/add-artist',
+    await axios.post('http://localhost:5000/api/auth/add-artist',
       { artist: customArtist.value.trim() },
       { withCredentials: true }
     );
 
-    // Add to local list
-    if (!userData.value.favoriteArtists) {
-      userData.value.favoriteArtists = [];
-    }
     userData.value.favoriteArtists.push(customArtist.value.trim());
-
-    // Clear input
     customArtist.value = '';
 
     $q.notify({
       color: 'positive',
       message: 'Artist added successfully',
-      icon: 'check_circle'
+      icon: 'check_circle',
+      position: 'bottom-right',
+      timeout: 2000
     });
   } catch (error) {
     console.error('Failed to add artist:', error.response?.data || error.message);
     $q.notify({
       color: 'negative',
       message: 'Failed to add artist',
-      icon: 'error'
+      position: 'bottom-right',
+      timeout: 2000
     });
   }
 }
 
-async function removeArtist(artist) {
-  // Simple UI removal for now
-  // In a real app, you'd want to add a backend endpoint to remove artists
-  userData.value.favoriteArtists = userData.value.favoriteArtists.filter(a => a !== artist);
+async function updateAccountInfo() {
+  try {
+    await axios.post('http://localhost:5000/api/auth/save-user-details',
+      {
+        username: userData.value.username,
+        dateOfBirth: userData.value.dateOfBirth
+      },
+      { withCredentials: true }
+    );
 
-  $q.notify({
-    color: 'info',
-    message: `${artist} removed from favorites`,
-    icon: 'info'
-  });
+    $q.notify({
+      color: 'positive',
+      message: 'Profile updated successfully!',
+      icon: 'check_circle',
+      position: 'top',
+      timeout: 2000
+    });
+  } catch (error) {
+    console.error('Failed to update profile:', error.response?.data || error.message);
+    $q.notify({
+      color: 'negative',
+      message: 'Failed to update profile',
+      position: 'top',
+      timeout: 2000
+    });
+  }
 }
 
-async function logout() {
+async function uploadProfileImage(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append('profileImage', file);
+
   try {
-    await axios.get('http://localhost:5000/api/auth/logout', { withCredentials: true });
-
-    // Clear ALL possible storage locations
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('refreshToken');
-
-    // Clear sessionStorage
-    sessionStorage.clear();
-
-    // Clear cookies (if your app uses them)
-    document.cookie.split(";").forEach(function (c) {
-      document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+    const res = await axios.post('http://localhost:5000/api/auth/upload-profile-image', formData, {
+      withCredentials: true,
+      headers: { 'Content-Type': 'multipart/form-data' }
     });
 
-    // Use a simple alert instead of Quasar notification
-    alert('Logged out successfully');
-
-    // Redirect to login page
-    router.push('/login');
+    userData.value.profileImage = res.data.profileImageUrl;
+    $q.notify({
+      color: 'positive',
+      message: 'Profile image updated!',
+      icon: 'check_circle',
+      position: 'top',
+      timeout: 2000
+    });
   } catch (error) {
-    console.error('Failed to log out:', error);
-    alert('Failed to log out');
+    console.error('Failed to upload profile image:', error.response?.data || error.message);
+    $q.notify({
+      color: 'negative',
+      message: 'Failed to uploadscript',
+      position: 'top',
+      timeout: 2000
+    });
   }
 }
 
-function confirmDeleteAccount() {
-  deleteConfirmText.value = '';
-  deleteConfirmOpen.value = true;
-}
-
-async function deleteAccount() {
-  try {
-    await axios.delete('http://localhost:5000/api/auth/delete-account', { withCredentials: true });
-
-    // Redirect to login
-    router.push('/login');
-  } catch (error) {
-    console.error('Failed to delete account:', error.response?.data || error.message);
-    alert("Failed to delete account: " + (error.response?.data?.message || error.message));
-  }
-}
-
-onMounted(() => {
-  fetchUserProfile();
-  localStorage.removeItem('authToken');
-  localStorage.removeItem('user');
-  sessionStorage.clear();
-
-  // If your app uses cookies, clear those too
-  document.cookie.split(";").forEach(function (c) {
-    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-  });
-});
+onMounted(fetchUserProfile);
 </script>
 
 <style scoped>
-/* Modern white theme */
-.q-page {
-  background: #f8f9fa;
+.profile-page {
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  position: relative;
 }
 
-/* Profile container */
+.blur-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 260px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  filter: blur(0px);
+  z-index: 0;
+}
+
 .profile-container {
   position: relative;
-  text-align: center;
-  padding: 40px 20px;
-  width: 90%;
-  max-width: 1000px;
-  background: white;
-  border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-bottom: 32px;
 }
 
-/* Sign out button */
-.sign-out-btn {
-  position: absolute;
-  top: 20px;
-  right: 20px;
+.nav-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
 }
 
-/* Profile header */
 .profile-header {
-  margin-bottom: 30px;
+  padding: 24px 0;
 }
 
-/* Profile picture */
-.profile-img {
-  border: 2px solid #f2f2f2;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-  margin-bottom: 15px;
-  overflow: hidden;
+.profile-header-content {
+  display: flex;
+  align-items: center;
 }
 
-/* Profile name and email */
-.profile-name {
-  font-size: 28px;
+.profile-avatar {
+  border: 4px solid white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.spotify-btn {
   font-weight: 600;
-  color: #333;
-  margin-bottom: 5px;
+  padding: 8px 16px;
 }
 
-.profile-email {
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 20px;
+.content-area {
+  padding: 8px 0;
 }
 
-/* Card for user info */
-.info-card {
-  width: 100%;
+.profile-card {
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
   background: white;
-  border-radius: 15px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-}
-
-/* Sections */
-.section {
-  margin: 20px 0;
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 8px;
 }
 
-.section-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
+.artist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
 }
 
-.section-divider {
-  margin: 30px 0;
-}
-
-/* Artist input */
-.artist-input {
+.artist-item {
   display: flex;
-  gap: 10px;
+  flex-direction: column;
   align-items: center;
 }
 
-.artist-field {
-  width: 200px;
-}
-
-/* Favorite artists */
-.artist-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 10px;
-  justify-content: center;
-}
-
-.artist-chip {
-  transition: all 0.2s ease;
-}
-
-.artist-chip:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-}
-
-/* Grid layout for top artists and tracks */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 20px;
-  margin-top: 15px;
-}
-
-/* Spotify cards */
-.spotify-card {
-  position: relative;
-  overflow: hidden;
-  border-radius: 15px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-}
-
-.spotify-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
-}
-
-.spotify-img {
+.artist-img {
+  border-radius: 8px;
   width: 100%;
-  height: 180px;
+  aspect-ratio: 1;
   object-fit: cover;
 }
 
-.spotify-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
-  padding: 15px 10px;
-  transition: all 0.3s ease;
-}
-
-.spotify-card:hover .spotify-overlay {
-  padding-bottom: 25px;
-}
-
-.spotify-text {
+.artist-name {
+  margin-top: 8px;
   font-size: 14px;
-  font-weight: 600;
-  margin: 0;
-  color: white;
-}
-
-.spotify-subtext {
-  font-size: 12px;
-  margin: 0;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-/* Now playing */
-.now-playing-card {
-  display: flex;
-  align-items: center;
-  background: linear-gradient(to right, #f5f7fa, #c3cfe2);
-  padding: 15px;
-  border-radius: 15px;
-  gap: 15px;
-  position: relative;
-  overflow: hidden;
-}
-
-.now-playing-img {
-  width: 70px;
-  height: 70px;
-  border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-}
-
-.now-playing-info {
-  flex: 1;
-  text-align: left;
-}
-
-.now-playing-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-  margin: 0 0 5px 0;
-}
-
-.now-playing-artist {
-  font-size: 14px;
-  color: #666;
-  margin: 0;
-}
-
-.now-playing-icon {
-  color: rgba(0, 0, 0, 0.1);
-  position: absolute;
-  right: 15px;
-}
-
-/* Empty states */
-.empty-state {
-  color: #999;
   text-align: center;
-  font-style: italic;
-  margin: 20px 0;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
-/* Account settings section */
-.account-actions {
+.track-item {
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.track-item:hover {
+  background-color: #f8f9fa;
+}
+
+.empty-state {
   display: flex;
+  flex-direction: column;
+  astyleitems: center;
   justify-content: center;
-  margin-top: 20px;
+  padding: 24px;
+  border-radius: 8px;
+  background-color: #f8f9fa;
 }
 
-.delete-account-btn {
-  transition: all 0.2s ease;
-}
+@media (max-width: 768px) {
+  .profile-header-content {
+    flex-direction: column;
+    text-align: center;
+  }
 
-.delete-account-btn:hover {
-  background: #d32f2f !important;
-}
-
-/* Delete dialog */
-.delete-dialog {
-  width: 400px;
-  max-width: 90vw;
+  .profile-info {
+    margin-left: 0;
+    margin-top: 16px;
+  }
 }
 </style>

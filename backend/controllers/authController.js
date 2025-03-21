@@ -156,32 +156,71 @@ export const googleCallback = async (req, res) => {
 
 export const saveOnboardingData = async (req, res) => {
   try {
+    console.log('🔥 Received Onboarding Data:', req.body);
+    console.log('📸 Received File:', req.file); // Debug file upload
+
     if (!req.session.userId) {
       return res.status(401).json({ message: 'Unauthorized: No session found.' });
     }
 
-    const { username, dateOfBirth, favoriteArtists } = req.body;
     const userId = req.session.userId;
-
     const user = await User.findByPk(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found.' });
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    // 🔥 Ensure we update only non-empty fields
+    if (req.body.username && req.body.username.trim() !== '') {
+      user.name = req.body.username;
     }
 
-    // Update user details
-    user.username = username || user.username;
-    user.dateOfBirth = dateOfBirth || user.dateOfBirth;
-    user.favoriteArtists = Array.isArray(favoriteArtists) ? favoriteArtists.join(', ') : '';
+    if (req.body.dateOfBirth && req.body.dateOfBirth.trim() !== '') {
+      user.dateOfBirth = req.body.dateOfBirth;
+    }
 
+    if (req.body.email && req.body.email.trim() !== '') {
+      user.email = req.body.email;
+    }
+
+    if (req.file) {
+      user.profileImage = `/uploads/${req.file.filename}`;
+    }
+
+    if (req.body.favoriteArtists) {
+      try {
+        const artists = JSON.parse(req.body.favoriteArtists);
+        if (Array.isArray(artists)) {
+          user.favoriteArtists = artists.join(', ');
+        }
+      } catch (e) {
+        console.error('❌ Error parsing favoriteArtists:', e);
+      }
+    }
+
+    // 🔥 Mark user as no longer new
+    user.isNewUser = false;
+
+    // ✅ Save changes to the database
     await user.save();
 
-    res.json({ success: true, message: 'Onboarding data saved successfully!' });
+    console.log('✅ User successfully updated:', user);
+
+    res.json({
+      success: true,
+      message: 'Onboarding data saved successfully!',
+      user: {
+        id: user.id,
+        username: user.name,
+        email: user.email,
+        dateOfBirth: user.dateOfBirth,
+        profileImage: user.profileImage,
+        favoriteArtists: user.favoriteArtists ? user.favoriteArtists.split(', ') : [],
+        isNewUser: user.isNewUser,
+      },
+    });
   } catch (error) {
-    console.error('Error saving onboarding data:', error);
+    console.error('❌ Error saving onboarding data:', error);
     res.status(500).json({ message: 'Failed to save onboarding data', error: error.message });
   }
 };
-
 export const getUserProfile = async (req, res) => {
   try {
     if (!req.session || !req.session.userId) {
@@ -189,61 +228,68 @@ export const getUserProfile = async (req, res) => {
     }
 
     const user = await User.findByPk(req.session.userId);
+    console.log('Fetching User Data:', user);
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
     }
 
-    const response = {
-      user: {
-        id: user.id,
-        name: user.name,
-        username: user.username || '',
-        email: user.email || '',
-        profileImage: user.profileImage || '',
-        dateOfBirth: user.dateOfBirth || '',
-        favoriteArtists: user.favoriteArtists ? user.favoriteArtists.split(', ') : [],
-        isNewUser: user.isNewUser,
-        spotifyToken: user.spotifyToken || null,
-      },
-      spotifyData: {
-        topArtists: [],
-        topTracks: [],
-        currentPlayback: null,
-      },
+    let spotifyData = {
+      topArtists: [],
+      topTracks: [],
+      currentPlayback: null,
     };
 
     if (user.spotifyToken) {
       try {
         const token = user.spotifyToken;
-        const headers = { Authorization: `Bearer ${token}` };
 
-        const [profileRes, topArtistsRes, topTracksRes, playbackRes] = await Promise.all([
-          axios.get('https://api.spotify.com/v1/me', { headers }).catch(() => null),
-          axios
-            .get('https://api.spotify.com/v1/me/top/artists?limit=10', { headers })
-            .catch(() => null),
-          axios
-            .get('https://api.spotify.com/v1/me/top/tracks?limit=10', { headers })
-            .catch(() => null),
-          axios.get('https://api.spotify.com/v1/me/player', { headers }).catch(() => null),
-        ]);
+        // 🔥 Fetch top artists
+        const topArtistsResponse = await axios.get(
+          'https://api.spotify.com/v1/me/top/artists?limit=10',
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
 
-        response.spotifyData.profile = profileRes?.data || null;
-        response.spotifyData.topArtists = topArtistsRes?.data?.items || [];
-        response.spotifyData.topTracks = topTracksRes?.data?.items || [];
-        response.spotifyData.currentPlayback = playbackRes?.data || null;
+        // 🔥 Fetch top tracks
+        const topTracksResponse = await axios.get(
+          'https://api.spotify.com/v1/me/top/tracks?limit=10',
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+
+        spotifyData.topArtists = topArtistsResponse.data.items;
+        spotifyData.topTracks = topTracksResponse.data.items;
       } catch (error) {
-        console.error('Spotify API error:', error.message);
+        console.error('❌ Failed to fetch Spotify data:', error.message);
       }
     }
 
-    res.json(response);
+    console.log('📤 Sending User Profile:', { user, spotifyData });
+     console.log('✅ Fetching Updated User Data:', user); 
+
+      const profileImageUrl = user.profileImage
+        ? `${process.env.BASE_URL}${user.profileImage}` // 🔥 Add base URL
+        : null;
+
+    res.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        profileImage: user.profileImageUrl,
+        dateOfBirth: user.dateOfBirth,
+        favoriteArtists: user.favoriteArtists ? user.favoriteArtists.split(', ') : [],
+        isNewUser: user.isNewUser,
+      },
+      spotifyData,
+    });
   } catch (error) {
-    console.error('Unexpected error:', error.message);
+    console.error('❌ Failed to fetch user profile:', error);
     res.status(500).json({ message: 'Failed to fetch user profile.' });
   }
 };
-
 export const logoutUser = (req, res) => {
   req.session.destroy((err) => {
     if (err) {
@@ -251,7 +297,10 @@ export const logoutUser = (req, res) => {
       return res.status(500).json({ message: 'Failed to log out.' });
     }
 
+    // Clear all session cookies
     res.clearCookie('connect.sid', { path: '/' });
+    res.clearCookie('token');
+
     return res.status(200).json({ message: 'Logged out successfully!' });
   });
 };

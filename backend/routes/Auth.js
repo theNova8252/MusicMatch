@@ -10,17 +10,33 @@ import {
   saveUserDetails,
   fetchSpotifyArtists,
   saveOnboardingData,
-  deleteAccount
-} from '../controllers/authController.js'; // ✅ Import all required functions
+  deleteAccount,
+} from '../controllers/authController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 import User from '../models/User.js';
+import multer from 'multer';
+
+const upload = multer({ dest: 'uploads/' });
 
 const router = express.Router();
 
-// 🟢 Test Route
+// Test Route
 router.get('/test', (req, res) => {
   res.send('Auth route is working!');
-}); 
+});
+
+router.get('/profile', authMiddleware, getUserProfile);
+router.get('/spotify', spotifyLogin);
+router.get('/spotify/callback', spotifyCallback);
+router.get('/google', googleLogin);
+router.get('/google/callback', googleCallback);
+router.post('/save-onboarding-data', authMiddleware, upload.single('profileImage'), saveOnboardingData);
+router.get('/logout', logoutUser);
+router.post('/save-user-details', authMiddleware, saveUserDetails);
+router.get('/fetch-spotify-artists', authMiddleware, fetchSpotifyArtists);
+router.delete('/delete-account', authMiddleware, deleteAccount);
+router.post('/update-account', authMiddleware, saveUserDetails);
+router.post('/add-artist', authMiddleware, addCustomArtist);
 
 router.get('/spotify/token', authMiddleware, async (req, res) => {
   try {
@@ -36,24 +52,5 @@ router.get('/spotify/token', authMiddleware, async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch token.' });
   }
 });
+
 export default router;
-
-
-router.get('/profile', authMiddleware, getUserProfile);
-
-router.get('/spotify', spotifyLogin);
-router.get('/spotify/callback', spotifyCallback);
-
-
-router.get('/google', googleLogin);
-router.get('/google/callback', googleCallback);
-router.post('/save-onboarding-data', saveOnboardingData);
-router.get('/logout', logoutUser);
-router.post('/save-user-details', saveUserDetails);
-router.get('/fetch-spotify-artists', authMiddleware, fetchSpotifyArtists);
-router.post('/onboarding', authMiddleware, saveOnboardingData);
-router.delete('/delete-account', authMiddleware, deleteAccount);
-
-router.post('/add-artist', authMiddleware, addCustomArtist);
-
-export const authRoutes = router;  // ✅ Named Export

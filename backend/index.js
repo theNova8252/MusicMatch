@@ -5,7 +5,7 @@ import pkg from 'pg'; // Import pg as default and extract Pool
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
-import { authRoutes } from './routes/auth.js';
+import authRoutes from './routes/auth.js';
 import matchRoutes from './routes/match.js';
 import chatRoutes from './routes/chat.js';
 import sequelize from './config/db.js';
@@ -40,12 +40,17 @@ app.use(
   session({
     store: new PgStore({
       pool: pgPool,
-      createTableIfMissing: true, // This creates the session table automatically
+      createTableIfMissing: true, // 🔥 Ensure session table exists
     }),
     secret: process.env.SESSION_SECRET || 'supersecretkey',
     resave: false,
-    saveUninitialized: false,
-    cookie: { secure: false, httpOnly: true, maxAge: 1000 * 60 * 60 * 24 }, // 1 day
+    saveUninitialized: false, // 🔥 Prevents unnecessary empty sessions
+    cookie: {
+      secure: false, // 🔥 Change to `true` if using HTTPS
+      httpOnly: true,
+      sameSite: 'lax', // ✅ Ensures session cookie is sent properly
+      maxAge: 1000 * 60 * 60 * 24, // 1 day
+    },
   }),
 );
 
