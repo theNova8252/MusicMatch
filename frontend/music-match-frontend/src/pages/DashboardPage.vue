@@ -2,7 +2,6 @@
   <q-page class="profile-page">
     <div class="blur-bg"></div>
     <div class="profile-container q-pa-md">
-      <!-- Top Navigation Bar -->
       <div class="nav-bar q-mb-lg">
         <h4 class="text-weight-bold q-my-none text-white">MusicMatch</h4>
         <q-btn flat round color="white" icon="logout" @click="logout">
@@ -10,7 +9,6 @@
         </q-btn>
       </div>
 
-      <!-- Profile Header Section -->
       <div class="profile-header q-mb-xl">
         <div class="profile-header-content">
           <q-avatar size="120px" class="profile-avatar">
@@ -28,9 +26,7 @@
         </div>
       </div>
 
-      <!-- Main Content Area -->
       <div class="content-area">
-        <!-- Account Info Section -->
         <q-card class="profile-card q-mb-md">
           <q-card-section>
             <div class="section-header">
@@ -352,18 +348,15 @@ const signOut = async () => {
   try {
     await axios.get('http://localhost:5000/api/auth/logout', { withCredentials: true });
 
-    // 🚀 Completely clear frontend storage
     localStorage.clear();
     sessionStorage.clear();
 
-    // 🚀 Manually delete all cookies
     document.cookie.split(";").forEach((c) => {
       document.cookie = c
         .replace(/^ +/, "")
         .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
     });
 
-    // 🚀 Force a hard page reload to ensure no lingering Vue state
     window.location.href = '/login';
   } catch (error) {
     console.error('Failed to sign out:', error.response?.data || error.message);
@@ -378,14 +371,13 @@ async function fetchUserProfile() {
 
     userData.value = {
       id: res.data.user?.id || '',
-      username: res.data.user?.name || 'Guest',  // 🔥 Fix: Use `name` from DB
+      username: res.data.user?.name || 'Guest', 
       email: res.data.user?.email || '',
       profileImage: res.data.user?.profileImage || null,
       dateOfBirth: res.data.user?.dateOfBirth || '',
       favoriteArtists: res.data.user?.favoriteArtists || []
     };
 
-    // 🎵 Store Spotify data
     spotifyData.value = {
       topArtists: res.data.spotifyData?.topArtists || [],
       topTracks: res.data.spotifyData?.topTracks || [],
@@ -393,7 +385,7 @@ async function fetchUserProfile() {
     };
 
   } catch (error) {
-    console.error('❌ Failed to fetch profile:', error.response?.data || error.message);
+    console.error('Failed to fetch profile:', error.response?.data || error.message);
   }
 }
 

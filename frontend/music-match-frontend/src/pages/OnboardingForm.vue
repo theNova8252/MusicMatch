@@ -6,13 +6,11 @@
       <q-form @submit="saveOnboardingData" class="q-gutter-md">
         <q-input v-model="username" label="Username" outlined :rules="[val => !!val || 'Username is required']" />
         <q-input v-model="dateOfBirth" label="Date of Birth" outlined type="date" :rules="[validateAge]" />
-        <!-- Profile Picture Upload -->
         <div class="q-mb-md">
           <div class="text-subtitle1 q-mb-sm">Profile Picture</div>
           <q-file v-model="profileImage" label="Upload Profile Picture" accept="image/*" filled />
         </div>
 
-        <!-- Example Artists -->
         <div class="q-mb-md">
           <div class="text-subtitle1 q-mb-sm">Select Favorite Artists</div>
           <div class="row q-gutter-sm">
@@ -24,7 +22,6 @@
           </div>
         </div>
 
-        <!-- User Added Artists -->
         <div class="q-mb-md">
           <div class="text-subtitle1 q-mb-sm">Your Favorite Artists</div>
           <div class="row items-center q-gutter-sm">
@@ -85,7 +82,7 @@ const saveOnboardingData = async () => {
     const formData = new FormData();
     formData.append('username', username.value.trim());
     formData.append('dateOfBirth', dateOfBirth.value);
-    formData.append('email', email.value.trim()); // Make sure email is included
+    formData.append('email', email.value.trim());
 
     if (profileImage.value instanceof File) {
       formData.append('profileImage', profileImage.value);
@@ -102,9 +99,9 @@ const saveOnboardingData = async () => {
 
     console.log("✅ Onboarding Response:", res.data);
 
-    router.push('/dashboard'); // Redirect to dashboard on success
+    router.push('/dashboard');
   } catch (error) {
-    console.error('❌ Failed to save data:', error.response?.data || error.message);
+    console.error('Failed to save data:', error.response?.data || error.message);
   } finally {
     loading.value = false;
   }
@@ -127,16 +124,14 @@ onMounted(async () => {
     if (response.data.user) {
       const user = response.data.user;
 
-      // 🚀 Fix: Redirect **only if** they are NOT a new user
       if (!user.isNewUser) {
-        console.log('✅ User already onboarded, redirecting to dashboard.');
+        console.log('User already onboarded, redirecting to dashboard.');
         router.push('/dashboard');
       }
     }
   } catch (error) {
-    console.error('❌ Error checking auth status:', error);
+    console.error('Error checking auth status:', error);
 
-    // If not authenticated, send to login
     if (error.response?.status === 401) {
       router.push('/login');
     }
