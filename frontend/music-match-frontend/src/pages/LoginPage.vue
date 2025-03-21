@@ -40,12 +40,10 @@ const googleLogin = () => {
   window.location.href = 'http://localhost:5000/api/auth/google';
 };
 
-// Check if user is already authenticated
 onMounted(async () => {
   try {
     const res = await axios.get('http://localhost:5000/api/auth/profile', { withCredentials: true });
     if (res.data.user) {
-      // Check if user needs to complete onboarding
       if (res.data.user.isNewUser) {
         router.push('/onboarding');
       } else {
