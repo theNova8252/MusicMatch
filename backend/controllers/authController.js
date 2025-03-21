@@ -122,27 +122,24 @@ export const googleCallback = async (req, res) => {
     if (!user) {
       user = await User.create({
         name: userData.name,
-        username: userData.name.split(' ')[0], // Default username to first name
+        username: userData.name.split(' ')[0],
         email: userData.email,
         profileImage: userData.picture,
         googleToken: accessToken,
         isNewUser: true,
       });
     } else {
-      // Update existing user's Google token
       user.googleToken = accessToken;
-      
-      // Update profile image if not already set
+
       if (!user.profileImage && userData.picture) {
         user.profileImage = userData.picture;
       }
-      
+
       await user.save();
     }
 
     req.session.userId = user.id;
 
-    // Redirect based on whether user has completed onboarding
     if (user.isNewUser) {
       return res.redirect('http://localhost:9000/onboarding');
     } else {
@@ -156,8 +153,8 @@ export const googleCallback = async (req, res) => {
 
 export const saveOnboardingData = async (req, res) => {
   try {
-    console.log('🔥 Received Onboarding Data:', req.body);
-    console.log('📸 Received File:', req.file); // Debug file upload
+    console.log('Received Onboarding Data:', req.body);
+    console.log('Received File:', req.file); // Debug file upload
 
     if (!req.session.userId) {
       return res.status(401).json({ message: 'Unauthorized: No session found.' });
@@ -167,7 +164,6 @@ export const saveOnboardingData = async (req, res) => {
     const user = await User.findByPk(userId);
     if (!user) return res.status(404).json({ message: 'User not found.' });
 
-    // 🔥 Ensure we update only non-empty fields
     if (req.body.username && req.body.username.trim() !== '') {
       user.name = req.body.username;
     }
@@ -191,17 +187,17 @@ export const saveOnboardingData = async (req, res) => {
           user.favoriteArtists = artists.join(', ');
         }
       } catch (e) {
-        console.error('❌ Error parsing favoriteArtists:', e);
+        console.error('Error parsing favoriteArtists:', e);
       }
     }
 
-    // 🔥 Mark user as no longer new
+    // Mark user as no longer new
     user.isNewUser = false;
 
-    // ✅ Save changes to the database
+    // Save changes to the database
     await user.save();
 
-    console.log('✅ User successfully updated:', user);
+    console.log('User successfully updated:', user);
 
     res.json({
       success: true,
@@ -217,7 +213,7 @@ export const saveOnboardingData = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('❌ Error saving onboarding data:', error);
+    console.error('Error saving onboarding data:', error);
     res.status(500).json({ message: 'Failed to save onboarding data', error: error.message });
   }
 };
@@ -243,7 +239,6 @@ export const getUserProfile = async (req, res) => {
       try {
         const token = user.spotifyToken;
 
-        // 🔥 Fetch top artists
         const topArtistsResponse = await axios.get(
           'https://api.spotify.com/v1/me/top/artists?limit=10',
           {
@@ -251,7 +246,6 @@ export const getUserProfile = async (req, res) => {
           },
         );
 
-        // 🔥 Fetch top tracks
         const topTracksResponse = await axios.get(
           'https://api.spotify.com/v1/me/top/tracks?limit=10',
           {
@@ -262,16 +256,16 @@ export const getUserProfile = async (req, res) => {
         spotifyData.topArtists = topArtistsResponse.data.items;
         spotifyData.topTracks = topTracksResponse.data.items;
       } catch (error) {
-        console.error('❌ Failed to fetch Spotify data:', error.message);
+        console.error('Failed to fetch Spotify data:', error.message);
       }
     }
 
-    console.log('📤 Sending User Profile:', { user, spotifyData });
-     console.log('✅ Fetching Updated User Data:', user); 
+    console.log('Sending User Profile:', { user, spotifyData });
+    console.log('Fetching Updated User Data:', user);
 
-      const profileImageUrl = user.profileImage
-        ? `${process.env.BASE_URL}${user.profileImage}` // 🔥 Add base URL
-        : null;
+    const profileImageUrl = user.profileImage
+      ? `${process.env.BASE_URL}${user.profileImage}`
+      : null;
 
     res.json({
       user: {
@@ -286,7 +280,7 @@ export const getUserProfile = async (req, res) => {
       spotifyData,
     });
   } catch (error) {
-    console.error('❌ Failed to fetch user profile:', error);
+    console.error('Failed to fetch user profile:', error);
     res.status(500).json({ message: 'Failed to fetch user profile.' });
   }
 };

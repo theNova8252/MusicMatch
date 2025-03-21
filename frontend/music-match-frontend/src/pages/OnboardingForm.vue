@@ -90,14 +90,14 @@ const saveOnboardingData = async () => {
 
     formData.append('favoriteArtists', JSON.stringify(favoriteArtists.value));
 
-    console.log("🚀 Sending Onboarding Data:", Object.fromEntries(formData.entries()));
+    console.log("Sending Onboarding Data:", Object.fromEntries(formData.entries()));
 
     const res = await axios.post('http://localhost:5000/api/auth/save-onboarding-data',
       formData,
       { withCredentials: true, headers: { 'Content-Type': 'multipart/form-data' } }
     );
 
-    console.log("✅ Onboarding Response:", res.data);
+    console.log("Onboarding Response:", res.data);
 
     router.push('/dashboard');
   } catch (error) {
