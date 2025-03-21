@@ -7,7 +7,7 @@
         </div>
 
         <h2 class="text-center q-mb-lg">Welcome to MusicMatch</h2>
-        <p class="text-center q-mb-lg text-grey-8">Connect with your favorite music platforms</p>
+        <p class="text-center q-mb-lg text-grey-8">Connect with your favorite platforms</p>
 
         <div class="q-gutter-md">
           <q-btn color="primary" class="full-width q-py-sm" icon="fab fa-spotify" label="Continue with Spotify"
@@ -61,6 +61,8 @@ onMounted(async () => {
   width: 100%;
   max-width: 400px;
   padding: 20px;
+  display: flex;
+  justify-content: center;
 }
 
 .login-card {
@@ -68,10 +70,12 @@ onMounted(async () => {
   border-radius: 16px;
   padding: 40px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  text-align: center;
 }
 
 .login-logo {
   text-align: center;
+  justify-content: center;
   margin-bottom: 20px;
 }
 
