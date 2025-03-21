@@ -1,7 +1,7 @@
 import express from 'express';
 import session from 'express-session';
 import PgSession from 'connect-pg-simple';
-import pkg from 'pg'; // Import pg as default and extract Pool
+import pkg from 'pg'; 
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
@@ -16,14 +16,12 @@ dotenv.config({path: path.resolve("./backend/", '.env')});
 console.log("DB_PASSWORD:", process.env.DB_PASS, typeof process.env.DB_PASS);
 
 
-// Log the values of DB_USER and DB_PASS
 console.log('DB_USER:', process.env.DB_USER);
 console.log('DB_PASS:', process.env.DB_PASS);
 
-const { Pool } = pkg; // Extract Pool from pg
+const { Pool } = pkg; 
 
 
-//Set up PostgreSQL pool
 const pgPool = new Pool({
   user: process.env.DB_USER,
   host: process.env.DB_HOST,
@@ -35,20 +33,19 @@ const pgPool = new Pool({
 const app = express();
 const PgStore = PgSession(session);
 
-//Set up session middleware
 app.use(
   session({
     store: new PgStore({
       pool: pgPool,
-      createTableIfMissing: true, // 🔥 Ensure session table exists
+      createTableIfMissing: true, 
     }),
     secret: process.env.SESSION_SECRET || 'supersecretkey',
     resave: false,
-    saveUninitialized: false, // 🔥 Prevents unnecessary empty sessions
+    saveUninitialized: false, 
     cookie: {
-      secure: false, // 🔥 Change to `true` if using HTTPS
+      secure: false, 
       httpOnly: true,
-      sameSite: 'lax', // ✅ Ensures session cookie is sent properly
+      sameSite: 'lax', 
       maxAge: 1000 * 60 * 60 * 24, // 1 day
     },
   }),
@@ -56,14 +53,13 @@ app.use(
 
 app.use(
   cors({
-    origin: ['http://localhost:5173', 'http://localhost:9000'], // Allow both frontend URLs
-    credentials: true, // Allow cookies and authentication headers
+    origin: ['http://localhost:5173', 'http://localhost:9000'], 
+    credentials: true, 
   }),
 );
 
 app.use(bodyParser.json());
 
-//Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/match', matchRoutes);
 app.use('/api/chat', chatRoutes);
@@ -82,7 +78,6 @@ sequelize
     console.error('Failed to sync database:', error.message);
   });
 
-//Start Server
 app.listen(process.env.PORT || 5000, () =>
   console.log(`Server running on port ${process.env.PORT || 5000}`)
 );
