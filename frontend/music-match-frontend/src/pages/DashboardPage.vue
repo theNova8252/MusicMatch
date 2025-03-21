@@ -75,7 +75,6 @@
           </q-card-section>
         </q-card>
 
-        <!-- Favorite Artists Section -->
         <q-card class="profile-card q-mb-md">
           <q-card-section>
             <div class="section-header">
@@ -106,7 +105,6 @@
           </q-card-section>
         </q-card>
 
-        <!-- Spotify Integration -->
         <div class="row q-col-gutter-md">
           <div class="col-12 col-md-6">
             <q-card class="profile-card">
@@ -184,31 +182,7 @@
 
             <div class="account-settings q-mt-md">
               <q-list>
-                <q-item clickable v-ripple>
-                  <q-item-section avatar>
-                    <q-icon name="notifications" color="primary" />
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label>Notification Preferences</q-item-label>
-                    <q-item-label caption>Manage how you receive notifications</q-item-label>
-                  </q-item-section>
-                  <q-item-section side>
-                    <q-icon name="chevron_right" color="grey-6" />
-                  </q-item-section>
-                </q-item>
 
-                <q-item clickable v-ripple>
-                  <q-item-section avatar>
-                    <q-icon name="security" color="primary" />
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label>Privacy & Security</q-item-label>
-                    <q-item-label caption>Manage your account security settings</q-item-label>
-                  </q-item-section>
-                  <q-item-section side>
-                    <q-icon name="chevron_right" color="grey-6" />
-                  </q-item-section>
-                </q-item>
 
                 <q-item clickable v-ripple>
                   <q-item-section avatar>
@@ -315,7 +289,7 @@ const confirmDeleteAccount = () => {
 const deleteAccount = async () => {
   try {
     const response = await axios.delete('http://localhost:5000/api/auth/delete-account', {
-      withCredentials: true,  
+      withCredentials: true,
     });
 
     console.log('Delete account response:', response.data);
@@ -371,7 +345,7 @@ async function fetchUserProfile() {
 
     userData.value = {
       id: res.data.user?.id || '',
-      username: res.data.user?.name || 'Guest', 
+      username: res.data.user?.name || 'Guest',
       email: res.data.user?.email || '',
       profileImage: res.data.user?.profileImage || null,
       dateOfBirth: res.data.user?.dateOfBirth || '',
