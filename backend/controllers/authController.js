@@ -196,15 +196,19 @@ export const googleCallback = async (req, res) => {
 
   try {
     const tokenResponse = await axios.post(
-      'https://accounts.spotify.com/api/token',
+      'https://oauth2.googleapis.com/token', 
       new URLSearchParams({
-        grant_type: 'authorization_code',
         code,
-        redirect_uri: process.env.SPOTIFY_REDIRECT_URI, // MUST match Spotify dashboard
-        client_id: process.env.SPOTIFY_CLIENT_ID,
-        client_secret: process.env.SPOTIFY_CLIENT_SECRET,
+        client_id: process.env.GOOGLE_CLIENT_ID,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        redirect_uri: process.env.GOOGLE_REDIRECT_URI,
+        grant_type: 'authorization_code',
       }).toString(),
-      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } },
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      },
     );
 
     const accessToken = tokenResponse.data.access_token;
