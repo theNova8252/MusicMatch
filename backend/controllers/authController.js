@@ -102,9 +102,8 @@ export const spotifyCallback = async (req, res) => {
         console.error('❌ Session Save Error:', err);
       }
       console.log('✅ Session Saved Successfully:', req.session);
-      res.redirect(
-        user.isNewUser ? 'http://localhost:9000/onboarding' : 'http://localhost:9000/dashboard',
-      );
+      const frontendBase = process.env.FRONTEND_URL || 'http://localhost:9000';
+      res.redirect(user.isNewUser ? `${frontendBase}/onboarding` : `${frontendBase}/dashboard`);
     });
   } catch (error) {
       console.log('🔥 SPOTIFY CALLBACK ERROR:', error.response?.data || error.message);
