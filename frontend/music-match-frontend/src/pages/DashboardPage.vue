@@ -268,16 +268,28 @@ const profileImageFile = ref(null);
 const deleteDialog = ref(false);
 const logoutDialog = ref(false);
 
-const removeArtist = (artist) => {
-  userData.value.favoriteArtists = userData.value.favoriteArtists.filter(a => a !== artist);
-  $q.notify({
-    color: 'info',
-    message: `Removed ${artist} from favorites`,
-    position: 'bottom-right',
-    timeout: 2000
-  });
-};
+const removeArtist = async (artist) => {
+  try {
+    await axios.post('http://localhost:5000/api/auth/remove-artist', { artist }, { withCredentials: true });
 
+    userData.value.favoriteArtists = userData.value.favoriteArtists.filter(a => a !== artist);
+
+    $q.notify({
+      color: 'info',
+      message: `Removed ${artist} from favorites`,
+      position: 'bottom-right',
+      timeout: 2000
+    });
+  } catch (error) {
+    console.error('Failed to remove artist:', error.response?.data || error.message);
+    $q.notify({
+      color: 'negative',
+      message: 'Failed to remove artist',
+      position: 'bottom-right',
+      timeout: 2000
+    });
+  }
+};
 const connectSpotify = () => {
   window.location.href = 'http://localhost:5000/api/auth/spotify';
 };

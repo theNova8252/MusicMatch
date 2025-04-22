@@ -8,7 +8,26 @@ dotenv.config();
 const generateToken = (user) => {
   return jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
+export const removeCustomArtist = async (req, res) => {
+  const { artist } = req.body;
+  if (!artist) return res.status(400).json({ message: 'Artist name is required.' });
 
+  try {
+    const user = await User.findByPk(req.session.userId);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    const currentArtists = user.favoriteArtists ? user.favoriteArtists.split(', ') : [];
+    const updatedArtists = currentArtists.filter((a) => a !== artist);
+
+    user.favoriteArtists = updatedArtists.join(', ');
+    await user.save();
+
+    res.json({ message: 'Artist removed.', artists: updatedArtists });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to remove artist.' });
+  }
+};
 export const deleteAccount = async (req, res) => {
   try {
     if (!req.user || !req.user.id) {
@@ -457,5 +476,58 @@ export const fetchSpotifyArtists = async (req, res) => {
   } catch (error) {
     console.error('Failed to fetch Spotify artists:', error.message);
     res.status(500).json({ message: 'Failed to fetch Spotify artists.' });
+  }
+};
+export const addFavoriteArtist = async (req, res) => {
+  const { artist } = req.body;
+  if (!artist) return res.status(400).json({ message: 'Artist name is required.' });
+
+  try {
+    const user = await User.findByPk(req.session.userId);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    const current = user.favoriteArtists ? user.favoriteArtists.split(', ') : [];
+    if (!current.includes(artist)) {
+      current.push(artist);
+      user.favoriteArtists = current.join(', ');
+      await user.save();
+    }
+
+    res.json({ message: 'Artist added.', artists: current });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to add artist.' });
+  }
+};
+
+export const getFavoriteArtists = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.session.userId);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    const artists = user.favoriteArtists ? user.favoriteArtists.split(', ') : [];
+    res.json({ artists });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to fetch artists.' });
+  }
+};
+
+export const removeFavoriteArtist = async (req, res) => {
+  const artist = decodeURIComponent(req.params.artist);
+
+  try {
+    const user = await User.findByPk(req.session.userId);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    const current = user.favoriteArtists ? user.favoriteArtists.split(', ') : [];
+    const filtered = current.filter((a) => a !== artist);
+    user.favoriteArtists = filtered.join(', ');
+    await user.save();
+
+    res.json({ message: 'Artist removed.', artists: filtered });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to remove artist.' });
   }
 };

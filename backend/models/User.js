@@ -12,7 +12,10 @@ User.init(
     profileImage: DataTypes.STRING,
     artists: DataTypes.JSONB,
     isNewUser: { type: DataTypes.BOOLEAN, defaultValue: true },
-    favoriteArtists: DataTypes.TEXT
+    favoriteArtists: {
+      type: DataTypes.STRING, 
+      allowNull: true,
+    },
   },
   {
     sequelize,
