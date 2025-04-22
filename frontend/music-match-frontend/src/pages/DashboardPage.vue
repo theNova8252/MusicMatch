@@ -3,13 +3,13 @@
     <div class="blur-bg"></div>
     <div class="profile-container q-pa-md">
       <div class="nav-bar q-mb-lg">
-        <h4 class="text-weight-bold q-my-none text-white">MusicMatch</h4>
-        <q-btn flat round color="white" icon="logout" @click="logout">
+        <h4 class="text-weight-bold q-my-none">MusicMatch</h4>
+        <q-btn flat round color="primary" icon="logout" @click="logout">
           <q-tooltip>Sign Out</q-tooltip>
         </q-btn>
       </div>
 
-      <div class="profile-header q-mb-xl">
+      <div class="profile-header q-mb-lg">
         <div class="profile-header-content">
           <q-avatar size="120px" class="profile-avatar">
             <q-img v-if="userData.profileImage" :src="userData.profileImage" />
@@ -18,10 +18,29 @@
             </div>
           </q-avatar>
           <div class="profile-info q-ml-md">
-            <h2 class="text-weight-bold text-white q-my-sm">{{ userData.username || 'Guest' }}</h2>
-            <p class="text-grey-4 q-my-sm">{{ userData.email }}</p>
+            <h2 class="text-weight-bold q-my-sm">{{ userData.username || 'Guest' }}</h2>
+            <p class="text-grey-8 q-my-sm">{{ userData.email }}</p>
             <q-btn v-if="!userData.spotifyToken" unelevated rounded color="green" class="q-mt-sm spotify-btn"
               label="Connect Spotify" icon="fab fa-spotify" @click="connectSpotify" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Compact Artist Showcase -->
+      <div class="artist-showcase q-mb-lg">
+        <div class="row items-center justify-between q-mb-sm">
+          <h6 class="q-my-none">Your Artists</h6>
+          <q-btn flat dense round color="primary" icon="shuffle" @click="shuffleArtistDisplay">
+            <q-tooltip>Shuffle Artists</q-tooltip>
+          </q-btn>
+        </div>
+        <div class="artist-bubbles-container">
+          <div class="artist-bubbles">
+            <q-avatar v-for="(artist, index) in displayedArtists" :key="index" :size="getRandomSize(index)"
+              class="artist-bubble q-mr-sm">
+              <q-img :src="getArtistImagePath(artist)" />
+              <q-tooltip>{{ artist }}</q-tooltip>
+            </q-avatar>
           </div>
         </div>
       </div>
@@ -31,37 +50,37 @@
           <q-card-section>
             <div class="section-header">
               <h5 class="text-weight-bold q-my-none">Account Information</h5>
-              <q-btn flat round color="primary" icon="edit" size="sm">
+              <q-btn flat round color="primary" icon="edit" size="sm" @click="editingProfile = true">
                 <q-tooltip>Edit Profile</q-tooltip>
               </q-btn>
             </div>
 
             <div class="row q-col-gutter-md q-mt-md">
               <div class="col-12 col-md-6">
-                <q-input v-model="userData.username" outlined bg-color="grey-1" dense label="Username">
+                <q-input v-model="userData.username" outlined dense label="Username" :readonly="!editingProfile">
                   <template v-slot:prepend>
                     <q-icon name="person" />
                   </template>
                 </q-input>
               </div>
               <div class="col-12 col-md-6">
-                <q-input v-model="userData.email" outlined bg-color="grey-1" dense label="Email">
+                <q-input v-model="userData.email" outlined dense label="Email" readonly>
                   <template v-slot:prepend>
                     <q-icon name="email" />
                   </template>
                 </q-input>
               </div>
               <div class="col-12 col-md-6">
-                <q-input v-model="userData.dateOfBirth" outlined bg-color="grey-1" dense label="Date of Birth"
-                  type="date">
+                <q-input v-model="userData.dateOfBirth" outlined dense label="Date of Birth" type="date"
+                  :readonly="!editingProfile">
                   <template v-slot:prepend>
                     <q-icon name="cake" />
                   </template>
                 </q-input>
               </div>
               <div class="col-12 col-md-6">
-                <q-file v-model="profileImageFile" outlined bg-color="grey-1" dense label="Profile Picture"
-                  @change="uploadProfileImage">
+                <q-file v-model="profileImageFile" outlined dense label="Profile Picture" @change="uploadProfileImage"
+                  :disable="!editingProfile">
                   <template v-slot:prepend>
                     <q-icon name="add_photo_alternate" />
                   </template>
@@ -69,7 +88,8 @@
               </div>
             </div>
 
-            <div class="row justify-end q-mt-md">
+            <div class="row justify-end q-mt-md" v-if="editingProfile">
+              <q-btn flat label="Cancel" class="q-mr-sm" @click="cancelEditing" />
               <q-btn color="primary" label="Save Changes" @click="updateAccountInfo" />
             </div>
           </q-card-section>
@@ -79,14 +99,14 @@
           <q-card-section>
             <div class="section-header">
               <h5 class="text-weight-bold q-my-none">Favorite Artists</h5>
-              <q-btn flat round color="primary" icon="playlist_add" size="sm">
+              <q-btn flat round color="primary" icon="playlist_add" size="sm" @click="openRecommendations">
                 <q-tooltip>Add from recommendations</q-tooltip>
               </q-btn>
             </div>
 
             <div class="artist-input q-mt-md">
-              <q-input v-model="customArtist" outlined bg-color="grey-1" dense label="Add artist"
-                placeholder="Add an artist you love">
+              <q-input v-model="customArtist" outlined dense label="Add artist" placeholder="Add an artist you love"
+                @keyup.enter="addArtist">
                 <template v-slot:append>
                   <q-btn round flat color="primary" icon="add" @click="addArtist" :disable="!customArtist.trim()" />
                 </template>
@@ -98,7 +118,7 @@
                 text-color="white" class="q-ma-xs" @remove="removeArtist(artist)">
                 {{ artist }}
               </q-chip>
-              <div v-if="!userData.favoriteArtists?.length" class="empty-state text-grey q-py-md text-center">
+              <div v-if="!userData.favoriteArtists?.length" class="empty-state text-grey-6 q-py-md text-center">
                 No favorite artists added yet. Add some artists you love!
               </div>
             </div>
@@ -111,7 +131,7 @@
               <q-card-section>
                 <div class="section-header">
                   <h5 class="text-weight-bold q-my-none">Spotify Top Artists</h5>
-                  <q-btn flat round color="primary" icon="refresh" size="sm">
+                  <q-btn flat round color="primary" icon="refresh" size="sm" @click="refreshSpotifyData">
                     <q-tooltip>Refresh</q-tooltip>
                   </q-btn>
                 </div>
@@ -121,11 +141,17 @@
                     <div v-for="artist in spotifyData.topArtists" :key="artist.id" class="artist-item">
                       <q-img :src="artist.images?.[0]?.url || 'https://via.placeholder.com/100'" class="artist-img" />
                       <div class="artist-name">{{ artist.name }}</div>
+                      <q-btn flat round size="xs" color="green" icon="add" @click="addArtistFromSpotify(artist.name)"
+                        class="artist-add-btn">
+                        <q-tooltip>Add to favorites</q-tooltip>
+                      </q-btn>
                     </div>
                   </div>
-                  <div v-else class="empty-state text-grey q-py-lg text-center">
-                    <q-icon name="music_note" size="48px" color="grey-6" />
+                  <div v-else class="empty-state text-grey-6 q-py-lg text-center">
+                    <q-icon name="music_note" size="48px" color="grey-7" />
                     <div class="q-mt-sm">Connect your Spotify account to see your top artists</div>
+                    <q-btn unelevated rounded color="green" class="q-mt-md spotify-btn" label="Connect Spotify"
+                      icon="fab fa-spotify" @click="connectSpotify" />
                   </div>
                 </div>
               </q-card-section>
@@ -137,7 +163,7 @@
               <q-card-section>
                 <div class="section-header">
                   <h5 class="text-weight-bold q-my-none">Spotify Top Songs</h5>
-                  <q-btn flat round color="primary" icon="refresh" size="sm">
+                  <q-btn flat round color="primary" icon="refresh" size="sm" @click="refreshSpotifyData">
                     <q-tooltip>Refresh</q-tooltip>
                   </q-btn>
                 </div>
@@ -156,16 +182,18 @@
                           <q-item-label caption>{{ track.artists?.[0]?.name || 'Unknown Artist' }}</q-item-label>
                         </q-item-section>
                         <q-item-section side>
-                          <q-btn flat round size="sm" color="grey-6" icon="play_arrow">
+                          <q-btn flat round size="sm" color="green" icon="play_arrow" @click="playOnSpotify(track.uri)">
                             <q-tooltip>Play on Spotify</q-tooltip>
                           </q-btn>
                         </q-item-section>
                       </q-item>
                     </q-list>
                   </div>
-                  <div v-else class="empty-state text-grey q-py-lg text-center">
-                    <q-icon name="queue_music" size="48px" color="grey-6" />
+                  <div v-else class="empty-state text-grey-6 q-py-lg text-center">
+                    <q-icon name="queue_music" size="48px" color="grey-7" />
                     <div class="q-mt-sm">Connect your Spotify account to see your top tracks</div>
+                    <q-btn unelevated rounded color="green" class="q-mt-md spotify-btn" label="Connect Spotify"
+                      icon="fab fa-spotify" @click="connectSpotify" />
                   </div>
                 </div>
               </q-card-section>
@@ -182,9 +210,20 @@
 
             <div class="account-settings q-mt-md">
               <q-list>
+                <q-item clickable v-ripple @click="openPrivacySettings">
+                  <q-item-section avatar>
+                    <q-icon name="security" color="primary" />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>Privacy Settings</q-item-label>
+                    <q-item-label caption>Manage your privacy preferences</q-item-label>
+                  </q-item-section>
+                  <q-item-section side>
+                    <q-icon name="arrow_forward_ios" color="grey-7" size="xs" />
+                  </q-item-section>
+                </q-item>
 
-
-                <q-item clickable v-ripple>
+                <q-item clickable v-ripple @click="confirmDeleteAccount">
                   <q-item-section avatar>
                     <q-icon name="delete" color="negative" />
                   </q-item-section>
@@ -193,7 +232,7 @@
                     <q-item-label caption>Permanently delete your account and data</q-item-label>
                   </q-item-section>
                   <q-item-section side>
-                    <q-btn unelevated color="negative" size="sm" label="Delete" @click="confirmDeleteAccount" />
+                    <q-btn unelevated color="negative" size="sm" label="Delete" />
                   </q-item-section>
                 </q-item>
               </q-list>
@@ -220,6 +259,38 @@
           <q-btn flat label="Delete Account" color="negative" @click="deleteAccount" v-close-popup />
         </q-card-actions>
       </q-card>
+      <div class="artist-showcase q-mb-lg">
+        <div class="row items-center justify-between q-mb-sm">
+          <h6 class="q-my-none">Your Artists</h6>
+          <q-btn flat dense round color="primary" icon="shuffle" @click="shuffleArtistDisplay">
+            <q-tooltip>Shuffle Artists</q-tooltip>
+          </q-btn>
+        </div>
+
+        <div class="artist-showcase q-mb-lg">
+          <div class="row items-center justify-between q-mb-sm">
+            <h6 class="q-my-none">Your Artists</h6>
+            <q-btn flat dense round color="primary" icon="shuffle" @click="shuffleArtistDisplay">
+              <q-tooltip>Shuffle Artists</q-tooltip>
+            </q-btn>
+          </div>
+
+          <div class="artist-bubbles-container">
+            <div v-if="displayedArtists.length > 0" class="artist-bubbles">
+              <div v-for="(artist, index) in displayedArtists" :key="index" class="artist-bubble"
+                :style="{ width: getRandomSize(index), height: getRandomSize(index) }">
+                <q-avatar :size="getRandomSize(index)">
+                  <img :src="getArtistImagePath(artist)" :alt="artist">
+                  <q-tooltip>{{ artist }}</q-tooltip>
+                </q-avatar>
+              </div>
+            </div>
+            <div v-else class="empty-state text-grey-6 q-py-md text-center">
+              No artists to display. Add some favorite artists!
+            </div>
+          </div>
+        </div>
+      </div>
     </q-dialog>
 
     <q-dialog v-model="logoutDialog" persistent>
@@ -239,6 +310,82 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <q-dialog v-model="recommendationsDialog">
+      <q-card style="width: 700px; max-width: 90vw">
+        <q-card-section>
+          <div class="text-h6">Recommended Artists</div>
+        </q-card-section>
+
+        <q-card-section class="q-pt-none">
+          <div class="row q-col-gutter-md">
+            <div v-for="artist in recommendedArtists" :key="artist.name" class="col-4 col-sm-3">
+              <q-card flat class="recommendation-card">
+                <q-img :src="artist.image" ratio="1" />
+                <q-card-section class="q-pa-sm">
+                  <div class="text-subtitle2">{{ artist.name }}</div>
+                  <div class="text-caption text-grey-7">{{ artist.genre }}</div>
+                </q-card-section>
+                <q-card-actions align="right" class="q-pa-xs">
+                  <q-btn flat round color="primary" icon="add" @click="addArtistFromRecommendation(artist.name)" />
+                </q-card-actions>
+              </q-card>
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Close" color="primary" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="privacySettingsDialog">
+      <q-card style="width: 500px; max-width: 90vw">
+        <q-card-section>
+          <div class="text-h6">Privacy Settings</div>
+        </q-card-section>
+
+        <q-card-section>
+          <q-list>
+            <q-item tag="label" v-ripple>
+              <q-item-section>
+                <q-item-label>Public Profile</q-item-label>
+                <q-item-label caption>Allow others to find your profile</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-toggle v-model="privacySettings.publicProfile" color="primary" />
+              </q-item-section>
+            </q-item>
+
+            <q-item tag="label" v-ripple>
+              <q-item-section>
+                <q-item-label>Show Music Activity</q-item-label>
+                <q-item-label caption>Display your currently playing tracks</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-toggle v-model="privacySettings.showActivity" color="primary" />
+              </q-item-section>
+            </q-item>
+
+            <q-item tag="label" v-ripple>
+              <q-item-section>
+                <q-item-label>Allow Messages</q-item-label>
+                <q-item-label caption>Let others send you direct messages</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-toggle v-model="privacySettings.allowMessages" color="primary" />
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" color="primary" v-close-popup />
+          <q-btn flat label="Save" color="primary" @click="savePrivacySettings" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -248,6 +395,24 @@ import { useQuasar } from 'quasar';
 import axios from 'axios';
 
 const $q = useQuasar();
+
+const artistImageMap = {
+  'Billie Eilish': 'billie.jpg',
+  'Dua Lipa': 'dualipa.jpg',
+  'Ed Sheeran': 'edsheeran.jpg',
+  'Tate McRae': 'tate.jpg',
+  'The Weeknd': 'weeknd.jpg',
+  'Taylor Swift': 'taylor.jpg',
+  'Ariana Grande': 'ariana.jpg',
+  'Bad Bunny': 'badbunny.jpg',
+  'Beyonce': 'beyonce.jpg',
+  'Drake': 'drake.jpg',
+  'Kendrick Lamar': 'kendrick.jpg',
+  'Rihanna': 'rihanna.jpg',
+  'SZA': 'sza.jpg',
+  'BTS': 'bts.jpg',
+  'Harry Styles': 'harry.jpg',
+};
 
 const userData = ref({
   username: '',
@@ -267,12 +432,91 @@ const customArtist = ref('');
 const profileImageFile = ref(null);
 const deleteDialog = ref(false);
 const logoutDialog = ref(false);
+const recommendationsDialog = ref(false);
+const privacySettingsDialog = ref(false);
+const editingProfile = ref(false);
+const displayedArtists = ref([]);
+
+// Mock recommendation artists 
+const recommendedArtists = ref([
+  { name: 'Olivia Rodrigo', image: 'https://via.placeholder.com/150', genre: 'Pop' },
+  { name: 'Post Malone', image: 'https://via.placeholder.com/150', genre: 'Hip-Hop/Pop' },
+  { name: 'Coldplay', image: 'https://via.placeholder.com/150', genre: 'Alternative/Rock' },
+  { name: 'Lana Del Rey', image: 'https://via.placeholder.com/150', genre: 'Alternative/Pop' },
+  { name: 'Imagine Dragons', image: 'https://via.placeholder.com/150', genre: 'Rock/Pop' },
+  { name: 'Adele', image: 'https://via.placeholder.com/150', genre: 'Pop/Soul' },
+  { name: 'Tyler, The Creator', image: 'https://via.placeholder.com/150', genre: 'Hip-Hop/Rap' },
+  { name: 'Frank Ocean', image: 'https://via.placeholder.com/150', genre: 'R&B/Soul' },
+  { name: 'Arctic Monkeys', image: 'https://via.placeholder.com/150', genre: 'Indie Rock' }
+]);
+
+const privacySettings = ref({
+  publicProfile: true,
+  showActivity: true,
+  allowMessages: true
+});
+
+// Select random artists to display in the bubble showcase
+const shuffleArtistDisplay = () => {
+  console.log("Shuffling artists:", userData.value.favoriteArtists);
+
+  if (!userData.value.favoriteArtists || userData.value.favoriteArtists.length === 0) {
+    displayedArtists.value = [];
+    return;
+  }
+
+  const allArtists = [...userData.value.favoriteArtists];
+  const shuffled = allArtists.sort(() => 0.5 - Math.random());
+  displayedArtists.value = shuffled.slice(0, Math.min(10, shuffled.length));
+
+  console.log("Displayed artists after shuffle:", displayedArtists.value);
+};
+
+// Get random sizes for artist bubbles
+const getRandomSize = (index) => {
+  const sizes = ['36px', '44px', '52px', '40px', '48px'];
+  return sizes[index % sizes.length];
+};
+
+// Get artist image from cache or placeholder
+const getArtistImagePath = (artist) => {
+  // Check if we have a specific image mapping for this artist
+  if (artistImageMap[artist]) {
+    return new URL(`../assets/images/${artistImageMap[artist]}`, import.meta.url).href;
+  }
+
+  // For artists without specific images, generate a color based on name
+  const hash = artist.split('').reduce((acc, char) => char.charCodeAt(0) + acc, 0);
+  const hue = hash % 360;
+  const backgroundColor = `hsl(${hue}, 70%, 60%)`;
+  const textColor = '#FFFFFF';
+
+  // Create a data URL for a colored background with text
+  const canvas = document.createElement('canvas');
+  canvas.width = 100;
+  canvas.height = 100;
+  const ctx = canvas.getContext('2d');
+
+  // Draw background
+  ctx.fillStyle = backgroundColor;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Draw text
+  ctx.fillStyle = textColor;
+  ctx.font = 'bold 48px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(artist.charAt(0).toUpperCase(), canvas.width / 2, canvas.height / 2);
+
+  return canvas.toDataURL('image/png');
+};
 
 const removeArtist = async (artist) => {
   try {
     await axios.post('http://localhost:5000/api/auth/remove-artist', { artist }, { withCredentials: true });
 
     userData.value.favoriteArtists = userData.value.favoriteArtists.filter(a => a !== artist);
+    shuffleArtistDisplay();
 
     $q.notify({
       color: 'info',
@@ -290,8 +534,17 @@ const removeArtist = async (artist) => {
     });
   }
 };
+
 const connectSpotify = () => {
   window.location.href = 'http://localhost:5000/api/auth/spotify';
+};
+
+const playOnSpotify = (uri) => {
+  if (!uri) return;
+
+  // Open in Spotify app or web player
+  const spotifyUrl = `https://open.spotify.com/track/${uri.split(':')[2]}`;
+  window.open(spotifyUrl, '_blank');
 };
 
 const confirmDeleteAccount = () => {
@@ -326,6 +579,85 @@ const deleteAccount = async () => {
   }
 };
 
+const openRecommendations = () => {
+  recommendationsDialog.value = true;
+};
+
+const openPrivacySettings = () => {
+  privacySettingsDialog.value = true;
+};
+
+const savePrivacySettings = async () => {
+  try {
+    // Mock API call - in a real app, this would save settings to backend
+    await new Promise(resolve => setTimeout(resolve, 600));
+
+    $q.notify({
+      color: 'positive',
+      message: 'Privacy settings updated',
+      position: 'bottom-right',
+      timeout: 2000
+    });
+  } catch {
+    $q.notify({
+      color: 'negative',
+      message: 'Failed to update privacy settings',
+      position: 'bottom-right',
+      timeout: 2000
+    });
+  }
+};
+
+const refreshSpotifyData = async () => {
+  try {
+    const res = await axios.get('http://localhost:5000/api/auth/refresh-spotify-data', { withCredentials: true });
+
+    if (res.data.spotifyData) {
+      spotifyData.value = res.data.spotifyData;
+
+      $q.notify({
+        color: 'positive',
+        message: 'Spotify data refreshed',
+        position: 'bottom-right',
+        timeout: 2000
+      });
+    }
+  } catch (error) {
+    console.error('Failed to refresh Spotify data:', error);
+    $q.notify({
+      color: 'negative',
+      message: 'Failed to refresh Spotify data',
+      position: 'bottom-right',
+      timeout: 2000
+    });
+  }
+};
+
+const addArtistFromSpotify = (artist) => {
+  if (!artist || userData.value.favoriteArtists.includes(artist)) {
+    return $q.notify({
+      color: 'info',
+      message: `${artist} is already in your favorites`,
+      position: 'bottom-right',
+      timeout: 2000
+    });
+  }
+
+  addArtistToFavorites(artist);
+};
+
+const addArtistFromRecommendation = (artist) => {
+  if (!artist || userData.value.favoriteArtists.includes(artist)) {
+    return $q.notify({
+      color: 'info',
+      message: `${artist} is already in your favorites`,
+      position: 'bottom-right',
+      timeout: 2000
+    });
+  }
+
+  addArtistToFavorites(artist);
+};
 
 const logout = () => {
   logoutDialog.value = true;
@@ -349,6 +681,12 @@ const signOut = async () => {
     console.error('Failed to sign out:', error.response?.data || error.message);
   }
 };
+
+const cancelEditing = () => {
+  editingProfile.value = false;
+  // Reset to original values if needed
+};
+
 async function fetchUserProfile() {
   try {
     const res = await axios.get('http://localhost:5000/api/auth/profile', { withCredentials: true });
@@ -370,6 +708,9 @@ async function fetchUserProfile() {
       currentPlayback: res.data.spotifyData?.currentPlayback || null
     };
 
+    // Initialize artist display
+    shuffleArtistDisplay();
+
   } catch (error) {
     console.error('Failed to fetch profile:', error.response?.data || error.message);
   }
@@ -378,18 +719,26 @@ async function fetchUserProfile() {
 async function addArtist() {
   if (!customArtist.value.trim()) return;
 
+  const artist = customArtist.value.trim();
+  addArtistToFavorites(artist);
+  customArtist.value = '';
+}
+
+async function addArtistToFavorites(artist) {
   try {
     await axios.post('http://localhost:5000/api/auth/add-artist',
-      { artist: customArtist.value.trim() },
+      { artist: artist },
       { withCredentials: true }
     );
 
-    userData.value.favoriteArtists.push(customArtist.value.trim());
-    customArtist.value = '';
+    if (!userData.value.favoriteArtists.includes(artist)) {
+      userData.value.favoriteArtists.push(artist);
+      shuffleArtistDisplay();
+    }
 
     $q.notify({
       color: 'positive',
-      message: 'Artist added successfully',
+      message: `${artist} added to favorites`,
       icon: 'check_circle',
       position: 'bottom-right',
       timeout: 2000
@@ -414,6 +763,8 @@ async function updateAccountInfo() {
       },
       { withCredentials: true }
     );
+
+    editingProfile.value = false;
 
     $q.notify({
       color: 'positive',
@@ -458,21 +809,47 @@ async function uploadProfileImage(event) {
     console.error('Failed to upload profile image:', error.response?.data || error.message);
     $q.notify({
       color: 'negative',
-      message: 'Failed to uploadscript',
+      message: 'Failed to upload profile image',
       position: 'top',
       timeout: 2000
     });
   }
 }
 
-onMounted(fetchUserProfile);
+onMounted(() => {
+  fetchUserProfile();
+
+  // Check for Spotify auth callback
+  const urlParams = new URLSearchParams(window.location.search);
+  const spotifyConnected = urlParams.get('spotify_connected');
+  setTimeout(() => {
+    shuffleArtistDisplay();
+  }, 500);
+
+
+  if (spotifyConnected === 'true') {
+    $q.notify({
+      color: 'positive',
+      message: 'Spotify connected successfully!',
+      icon: 'fab fa-spotify',
+      position: 'top',
+      timeout: 3000
+    });
+
+    // Remove query params from URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+
+    // Fetch Spotify data
+    refreshSpotifyData();
+  }
+});
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .profile-page {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #1e293b, #0f172a);
   position: relative;
+  min-height: 100vh;
+  background-color: #f5f7fa;
 }
 
 .blur-bg {
@@ -480,9 +857,8 @@ onMounted(fetchUserProfile);
   top: 0;
   left: 0;
   right: 0;
-  height: 260px;
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
-  filter: blur(0px);
+  height: 220px;
+  background: linear-gradient(135deg, #8e2de2 0%, #4a00e0 100%);
   z-index: 0;
 }
 
@@ -491,64 +867,96 @@ onMounted(fetchUserProfile);
   z-index: 1;
   max-width: 1200px;
   margin: 0 auto;
-  padding-bottom: 32px;
 }
 
 .nav-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 0;
+  color: white;
+  padding: 8px 0;
 }
 
 .profile-header {
-  padding: 24px 0;
+  background-color: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .profile-header-content {
   display: flex;
+  flex-direction: row;
   align-items: center;
 }
 
 .profile-avatar {
   border: 4px solid white;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.spotify-btn {
-  font-weight: 600;
-  padding: 8px 16px;
-}
-
-.content-area {
-  padding: 8px 0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .profile-card {
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+}
+
+.artist-bubbles-container {
+  overflow-x: auto;
+  padding: 8px 0;
+  scrollbar-width: thin;
+
+  &::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+  }
+}
+
+.artist-bubbles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 0;
+}
+
+.artist-bubble {
+  transition: transform 0.2s;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.artist-bubble:hover {
+  transform: scale(1.1);
+  z-index: 1;
+}
+
+.artist-bubble img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .artist-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
   gap: 16px;
-  margin-top: 16px;
 }
 
 .artist-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  position: relative;
+  text-align: center;
 }
 
 .artist-img {
@@ -559,36 +967,54 @@ onMounted(fetchUserProfile);
 }
 
 .artist-name {
-  margin-top: 8px;
-  font-size: 14px;
-  text-align: center;
-  font-weight: 500;
+  font-size: 12px;
+  margin-top: 6px;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 100%;
 }
 
-.track-item {
-  border-radius: 8px;
-  transition: background-color 0.2s;
+.artist-add-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
 }
 
-.track-item:hover {
-  background-color: #f8f9fa;
+.tracks-list {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.spotify-btn {
+  padding-left: 12px;
+  padding-right: 16px;
+
+  &:before {
+    margin-right: 8px;
+  }
+}
+
+.recommendation-card {
+  transition: transform 0.2s;
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-4px);
+  }
 }
 
 .empty-state {
+  border-radius: 8px;
+  background-color: rgba(0, 0, 0, 0.02);
   display: flex;
   flex-direction: column;
-  astyleitems: center;
+  align-items: center;
   justify-content: center;
-  padding: 24px;
-  border-radius: 8px;
-  background-color: #f8f9fa;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .profile-header-content {
     flex-direction: column;
     text-align: center;

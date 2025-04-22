@@ -1,88 +1,125 @@
 <template>
   <q-page class="flex flex-center column bg-grey-1">
-    <div class="onboarding-container q-pa-none">
-      <div class="header-section text-center q-pa-lg">
-        <h1 class="text-h3 text-weight-bold text-primary q-mb-md">Welcome to MusicMatch!</h1>
-        <p class="text-subtitle1 q-mb-lg text-grey-8">Let's set up your profile to find your music connections</p>
-      </div>
-
-      <q-form @submit="saveOnboardingData" class="q-px-lg q-pb-lg">
-        <div class="row q-col-gutter-md">
-          <div class="col-12 col-md-6">
-            <q-input v-model="username" label="Username" outlined class="text-subtitle1"
-              :rules="[val => !!val || 'Username is required']" />
-          </div>
-          <div class="col-12 col-md-6">
-            <q-input v-model="dateOfBirth" label="Date of Birth" outlined type="date" class="text-subtitle1"
-              :rules="[validateAge]" />
-          </div>
+    <div class="onboarding-wrapper">
+      <div class="onboarding-container">
+        <!-- Animated Gradient Header -->
+        <div class="header-section q-pa-md">
+          <h1 class="text-h3 text-bold gradient-text">MusicMatch</h1>
+          <p class="text-subtitle2 text-grey-7 q-mb-none">Find your sound. Connect with your tribe.</p>
         </div>
 
-        <div class="profile-pic-section q-my-md">
-          <div class="text-subtitle1 q-mb-sm text-weight-medium">Profile Picture</div>
-          <div class="row items-center">
-            <q-avatar size="80px" class="q-mr-md bg-grey-3">
-              <img v-if="previewImage" :src="previewImage">
-              <q-icon v-else name="person" size="60px" color="grey-6" />
-            </q-avatar>
-            <q-file v-model="profileImage" label="Upload Profile Picture" accept="image/*" outlined
-              @update:model-value="previewImageFile" style="max-width: 300px">
-              <template v-slot:prepend>
-                <q-icon name="cloud_upload" color="primary" />
-              </template>
-              <template v-slot:hint>
-                Recommended: Square image, 500x500px
-              </template>
-            </q-file>
-          </div>
-        </div>
-
-        <div class="music-preferences-section q-mt-xl">
-          <h2 class="text-h5 text-weight-bold q-mb-md">Your Music Preferences</h2>
-
-          <div class="q-mb-lg">
-            <div class="text-subtitle1 text-weight-medium q-mb-sm">Select Your Favorite Artists</div>
-            <p class="text-caption text-grey-8 q-mb-md">Click on artists you like or add your own below</p>
-
-            <div class="artists-grid">
-              <q-card v-for="artist in exampleArtists" :key="artist.name" class="artist-card"
-                :class="{ 'artist-selected': favoriteArtists.includes(artist.name) }" @click="toggleArtist(artist.name)">
-                <q-img :src="artist.image" class="artist-img" />
-                <div class="artist-overlay">
-                  <q-icon name="check_circle" size="28px" v-if="favoriteArtists.includes(artist.name)" />
-                </div>
-                <div class="artist-name-container q-pa-sm">
-                  <p class="artist-name text-weight-medium">{{ artist.name }}</p>
-                  <p class="artist-genre text-caption">{{ artist.genre }}</p>
-                </div>
-              </q-card>
-            </div>
-          </div>
-
-          <div class="q-mb-xl">
-            <div class="text-subtitle1 text-weight-medium q-mb-sm">Add Your Own Artists</div>
-            <div class="row items-center q-gutter-sm">
-              <q-input v-model="artistInput" label="Artist name" outlined dense class="col"
-                hint="Press enter or click + to add" @keyup.enter="addArtist(artistInput)" />
-              <q-btn color="primary" icon="add" round @click="addArtist(artistInput)" :disable="!artistInput.trim()" />
-            </div>
-
-            <div class="selected-artists q-mt-md">
-              <div class="text-subtitle1 text-weight-medium q-mb-sm" v-if="favoriteArtists.length">Your Selected Artists
+        <q-form @submit="saveOnboardingData" class="form-content q-px-md q-pb-md">
+          <!-- User Info Section -->
+          <div class="form-section">
+            <div class="row q-col-gutter-md">
+              <div class="col-12 col-md-6">
+                <q-input v-model="username" label="Username" filled color="primary" bg-color="white"
+                  class="modern-input" :rules="[val => !!val || 'Username is required']">
+                  <template v-slot:prepend>
+                    <q-icon name="person" color="primary" />
+                  </template>
+                </q-input>
               </div>
-              <div class="row q-gutter-sm">
+              <div class="col-12 col-md-6">
+                <q-input v-model="dateOfBirth" label="Date of Birth" filled color="primary" bg-color="white" type="date"
+                  class="modern-input" :rules="[validateAge]">
+                  <template v-slot:prepend>
+                    <q-icon name="event" color="primary" />
+                  </template>
+                </q-input>
+              </div>
+            </div>
+          </div>
+
+          <!-- Profile Picture Section -->
+          <div class="form-section profile-upload-section">
+            <div class="row items-center justify-between">
+              <div class="col-12 col-md-4">
+                <div class="text-subtitle1 text-weight-medium text-primary q-mb-sm">Profile Picture</div>
+                <div class="upload-preview">
+                  <q-avatar size="100px" class="profile-avatar">
+                    <img v-if="previewImage" :src="previewImage">
+                    <div v-else class="flex flex-center full-height">
+                      <q-icon name="add_a_photo" size="36px" color="primary" />
+                    </div>
+                  </q-avatar>
+                </div>
+              </div>
+              <div class="col-12 col-md-8 q-pl-md">
+                <q-file v-model="profileImage" label="Drop file here or click to upload" filled color="primary"
+                  bg-color="white" accept="image/*" class="modern-input" @update:model-value="previewImageFile"
+                  style="height: 100px" counter>
+                  <template v-slot:prepend>
+                    <q-icon name="cloud_upload" color="primary" />
+                  </template>
+                  <template v-slot:hint>
+                    <span class="text-caption">JPG, PNG or GIF • Max 5MB</span>
+                  </template>
+                </q-file>
+              </div>
+            </div>
+          </div>
+
+          <!-- Music Preferences Section -->
+          <div class="form-section">
+            <div class="section-header">
+              <div class="text-subtitle1 text-weight-medium text-primary q-mb-xs">Your Music Vibe</div>
+              <div class="text-caption text-grey-7">Select artists that match your taste</div>
+            </div>
+
+            <!-- Artist Selection Grid -->
+            <div class="artists-grid">
+              <div v-for="artist in exampleArtists" :key="artist.name" class="artist-tile"
+                :class="{ 'artist-selected': favoriteArtists.includes(artist.name) }"
+                @click="toggleArtist(artist.name)">
+                <div class="artist-image-container">
+                  <img :src="artist.image" class="artist-image" />
+                  <div class="artist-overlay">
+                    <q-icon name="check_circle" size="28px" v-if="favoriteArtists.includes(artist.name)" />
+                  </div>
+                </div>
+                <div class="artist-info">
+                  <div class="artist-name">{{ artist.name }}</div>
+                  <div class="artist-genre">{{ artist.genre }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Add Your Own Artists Section -->
+          <div class="form-section">
+            <div class="text-subtitle1 text-weight-medium text-primary q-mb-sm">Add Your Own Artists</div>
+            <div class="row items-center q-gutter-sm">
+              <q-input v-model="artistInput" placeholder="Enter artist name" filled color="primary" bg-color="white"
+                class="col modern-input" @keyup.enter="addArtist(artistInput)">
+                <template v-slot:append>
+                  <q-btn round flat color="primary" icon="add" @click="addArtist(artistInput)"
+                    :disable="!artistInput.trim()" />
+                </template>
+              </q-input>
+            </div>
+
+            <!-- Selected Artists Chips -->
+            <div class="selected-artists q-mt-md" v-if="favoriteArtists.length">
+              <div class="text-caption text-grey-7 q-mb-xs">Selected Artists</div>
+              <div class="row q-gutter-xs">
                 <q-chip v-for="(artist, index) in favoriteArtists" :key="index" removable color="primary"
-                  text-color="white" @remove="removeArtist(index)">
+                  text-color="white" square size="sm" class="artist-chip" @remove="removeArtist(index)">
                   {{ artist }}
                 </q-chip>
               </div>
             </div>
           </div>
-        </div>
 
-        <q-btn type="submit" color="primary" label="Complete Setup" class="full-width q-py-sm text-subtitle1"
-          :loading="loading" :disable="!isFormValid" />
-      </q-form>
+          <!-- Submit Button -->
+          <div class="form-section q-mt-md">
+            <q-btn type="submit" class="submit-btn" :loading="loading" :disable="!isFormValid">
+              <span class="text-subtitle2">Start Your Journey</span>
+              <q-icon name="arrow_forward" class="q-ml-sm" size="xs" />
+            </q-btn>
+          </div>
+        </q-form>
+      </div>
     </div>
   </q-page>
 </template>
@@ -226,92 +263,230 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.onboarding-container {
-  max-width: 900px;
+.onboarding-wrapper {
+  min-height: 100vh;
   width: 100%;
-  background: white;
+  padding: 16px;
+  background: linear-gradient(to bottom, #f7f7f9 0%, #e8e8f0 100%);
+}
+
+.onboarding-container {
+  max-width: 1000px;
+  width: 100%;
+  margin: 0 auto;
   border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  margin: 40px 20px;
+  background: #ffffff;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
 }
 
 .header-section {
-  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
-  color: white;
-  border-radius: 16px 16px 0 0;
+  padding-bottom: 20px;
+  position: relative;
+  background: radial-gradient(circle at top right, rgba(130, 36, 227, 0.1) 0%, rgba(250, 250, 252, 0.8) 70%);
+  overflow: hidden;
+}
+
+.header-section::after {
+  content: '';
+  position: absolute;
+  top: -80px;
+  right: -80px;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #8224e3, #4a00e0);
+  filter: blur(60px);
+  opacity: 0.2;
+  z-index: -1;
+}
+
+.gradient-text {
+  background: linear-gradient(90deg, #8224e3, #4a90e2, #8224e3);
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shine 3s linear infinite;
+}
+
+@keyframes shine {
+  to {
+    background-position: 200% center;
+  }
+}
+
+.form-content {
+  position: relative;
+  z-index: 1;
+}
+
+.form-section {
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.section-header {
+  margin-bottom: 16px;
+}
+
+.modern-input {
+  border-radius: 8px;
+}
+
+.modern-input :deep(.q-field__control) {
+  border-radius: 8px;
+  height: 46px;
+  background: #ffffff !important;
+  border: 1px solid #e0e0e6;
+}
+
+.modern-input :deep(.q-field__label) {
+  top: 14px;
+  font-weight: 500;
+  color: #666;
+}
+
+.upload-preview {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.profile-avatar {
+  border: 2px solid #8224e3;
+  background: #f5f5f5;
+  overflow: hidden;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
 }
 
 .artists-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 16px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
 }
 
-.artist-card {
+.artist-tile {
+  position: relative;
   cursor: pointer;
+  transition: all 0.3s ease;
   border-radius: 12px;
   overflow: hidden;
-  transition: all 0.2s ease;
+  background: #f5f5f7;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+}
+
+.artist-tile:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.artist-image-container {
   position: relative;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  height: 140px;
+  overflow: hidden;
 }
 
-.artist-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-}
-
-.artist-selected {
-  border: 3px solid #1976D2;
-  transform: translateY(-5px);
-}
-
-.artist-img {
-  height: 150px;
+.artist-image {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.artist-tile:hover .artist-image {
+  transform: scale(1.05);
 }
 
 .artist-overlay {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 50%;
-  color: #1976D2;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0);
+  transition: background 0.3s ease;
 }
 
-.artist-name-container {
-  background: white;
+.artist-selected .artist-overlay {
+  background: rgba(130, 36, 227, 0.2);
+}
+
+.artist-selected {
+  border: 2px solid #8224e3;
+  box-shadow: 0 0 15px rgba(130, 36, 227, 0.3);
+}
+
+.artist-info {
+  padding: 8px;
+  position: relative;
 }
 
 .artist-name {
-  margin: 0;
+  color: #333;
+  font-weight: 600;
   font-size: 14px;
-  line-height: 1.2;
+  margin-bottom: 2px;
 }
 
 .artist-genre {
-  margin: 0;
-  color: #666;
+  color: #777;
+  font-size: 11px;
 }
 
-.selected-artists {
-  min-height: 50px;
+.artist-chip {
+  font-weight: 500;
+  background: linear-gradient(45deg, #8224e3, #4a00e0);
+  transition: all 0.3s ease;
 }
 
-@media (max-width: 600px) {
+.artist-chip:hover {
+  box-shadow: 0 0 10px rgba(130, 36, 227, 0.3);
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  background: linear-gradient(45deg, #8224e3, #4a00e0);
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.submit-btn:hover:not(:disabled) {
+  box-shadow: 0 0 20px rgba(130, 36, 227, 0.4);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
   .artists-grid {
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
     gap: 10px;
   }
 
-  .artist-img {
+  .artist-image-container {
     height: 120px;
   }
 
-  .onboarding-container {
-    margin: 20px 10px;
+  .profile-avatar {
+    width: 80px;
+    height: 80px;
+  }
+}
+
+@media (max-width: 480px) {
+  .artists-grid {
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 8px;
+  }
+
+  .artist-image-container {
+    height: 100px;
   }
 }
 </style>
