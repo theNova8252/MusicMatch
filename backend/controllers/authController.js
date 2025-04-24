@@ -193,6 +193,10 @@ export const spotifyCallback = async (req, res) => {
         console.log('Existing user (not logged in) updated with Spotify:', user);
       }
     }
+    if (!user) {
+      console.error('❌ Spotify callback failed: No user found or created.');
+      return res.status(500).send('User creation or retrieval failed.');
+    }
 
     // Ensure session is saved
     req.session.userId = user.id;
@@ -324,6 +328,13 @@ export const googleCallback = async (req, res) => {
     });
 
     const userData = userResponse.data;
+    if (!userData.email) {
+      console.error('⚠️ Spotify user data has no email:', userData);
+      return res
+        .status(400)
+        .send('Spotify account has no email address. Please use a different account.');
+    }
+    
 
     let user = await User.findOne({ where: { email: userData.email } });
 
@@ -447,6 +458,7 @@ export const getUserProfile = async (req, res) => {
       try {
         const token = user.spotifyToken;
 
+        // Fetch top artists
         const topArtistsResponse = await axios.get(
           'https://api.spotify.com/v1/me/top/artists?limit=10',
           {
@@ -454,12 +466,46 @@ export const getUserProfile = async (req, res) => {
           },
         );
 
+        // Fetch top tracks
         const topTracksResponse = await axios.get(
           'https://api.spotify.com/v1/me/top/tracks?limit=10',
           {
             headers: { Authorization: `Bearer ${token}` },
           },
         );
+
+        // Fetch currently playing track
+        try {
+          const currentPlaybackResponse = await axios.get(
+            'https://api.spotify.com/v1/me/player/currently-playing',
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            },
+          );
+
+          if (
+            currentPlaybackResponse.status === 200 &&
+            currentPlaybackResponse.data &&
+            currentPlaybackResponse.data.item
+          ) {
+            spotifyData.currentPlayback = {
+              name: currentPlaybackResponse.data.item.name,
+              artist: currentPlaybackResponse.data.item.artists[0].name,
+              album: {
+                name: currentPlaybackResponse.data.item.album.name,
+                image: currentPlaybackResponse.data.item.album.images[0]?.url,
+              },
+              uri: currentPlaybackResponse.data.item.uri,
+              isPlaying: currentPlaybackResponse.data.is_playing,
+            };
+          }
+        } catch (playbackError) {
+          // Handle case where user might not be playing anything
+          console.log(
+            'No track currently playing or error fetching playback:',
+            playbackError.message,
+          );
+        }
 
         spotifyData.topArtists = topArtistsResponse.data.items;
         spotifyData.topTracks = topTracksResponse.data.items;
@@ -469,7 +515,6 @@ export const getUserProfile = async (req, res) => {
     }
 
     console.log('Sending User Profile:', { user, spotifyData });
-    console.log('Fetching Updated User Data:', user);
 
     const profileImageUrl = user.profileImage
       ? `${process.env.BASE_URL}${user.profileImage}`
@@ -480,7 +525,7 @@ export const getUserProfile = async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        profileImage: user.profileImageUrl,
+        profileImage: profileImageUrl, // Fixed variable name here
         dateOfBirth: user.dateOfBirth,
         favoriteArtists: user.favoriteArtists ? user.favoriteArtists.split(', ') : [],
         isNewUser: user.isNewUser,
@@ -490,6 +535,83 @@ export const getUserProfile = async (req, res) => {
   } catch (error) {
     console.error('Failed to fetch user profile:', error);
     res.status(500).json({ message: 'Failed to fetch user profile.' });
+  }
+};
+// In your auth controller file
+export const refreshSpotifyData = async (req, res) => {
+  try {
+    if (!req.session || !req.session.userId) {
+      return res.status(401).json({ message: 'Unauthorized: No session found.' });
+    }
+
+    const user = await User.findByPk(req.session.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    let spotifyData = {
+      topArtists: [],
+      topTracks: [],
+      currentPlayback: null,
+    };
+
+    if (user.spotifyToken) {
+      try {
+        const token = user.spotifyToken;
+
+        // Fetch top artists
+        const topArtistsResponse = await axios.get(
+          'https://api.spotify.com/v1/me/top/artists?limit=10',
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+
+        // Fetch top tracks
+        const topTracksResponse = await axios.get(
+          'https://api.spotify.com/v1/me/top/tracks?limit=10',
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+
+        // Fetch currently playing track
+        try {
+          const currentPlaybackResponse = await axios.get(
+            'https://api.spotify.com/v1/me/player/currently-playing',
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            },
+          );
+          
+          if (currentPlaybackResponse.status === 200 && currentPlaybackResponse.data && currentPlaybackResponse.data.item) {
+            spotifyData.currentPlayback = {
+              name: currentPlaybackResponse.data.item.name,
+              artist: currentPlaybackResponse.data.item.artists[0].name,
+              album: {
+                name: currentPlaybackResponse.data.item.album.name,
+                image: currentPlaybackResponse.data.item.album.images[0]?.url
+              },
+              uri: currentPlaybackResponse.data.item.uri,
+              isPlaying: currentPlaybackResponse.data.is_playing
+            };
+          }
+        } catch (playbackError) {
+          console.log('No track currently playing or error fetching playback:', playbackError.message);
+        }
+
+        spotifyData.topArtists = topArtistsResponse.data.items;
+        spotifyData.topTracks = topTracksResponse.data.items;
+      } catch (error) {
+        console.error('Failed to fetch Spotify data:', error.message);
+        return res.status(500).json({ message: 'Failed to fetch Spotify data.' });
+      }
+    }
+
+    res.json({ spotifyData });
+  } catch (error) {
+    console.error('Failed to refresh Spotify data:', error);
+    res.status(500).json({ message: 'Failed to refresh Spotify data.' });
   }
 };
 export const logoutUser = (req, res) => {

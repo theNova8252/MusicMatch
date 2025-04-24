@@ -15,7 +15,8 @@ import {
   requestAccountDeletion,
   confirmAccountDeletion,
   refreshSpotifyToken,
-  removeCustomArtist
+  removeCustomArtist,
+  refreshSpotifyData
 } from '../controllers/authController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 import User from '../models/User.js';
@@ -49,6 +50,7 @@ router.get('/confirm-delete/:token', confirmAccountDeletion);
 router.post("/spotify/token", getSpotifyToken);  // Route to exchange code for access token
 router.post("/spotify/refresh", refreshSpotifyToken); // Route to refresh token
 router.post('/remove-artist', authMiddleware, removeCustomArtist);
+router.get('/refresh-spotify-data', refreshSpotifyData);
 
 
 export default router;

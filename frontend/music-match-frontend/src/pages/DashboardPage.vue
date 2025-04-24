@@ -32,6 +32,41 @@
           </div>
         </div>
       </div>
+      <!-- Replace the current "Currently Playing" section with this improved version -->
+      <div class="currently-playing q-mb-lg">
+        <q-card class="profile-card">
+          <q-card-section>
+            <div class="section-header">
+              <h5 class="text-weight-bold q-my-none">Currently Playing</h5>
+              <q-btn flat round color="primary" icon="refresh" size="sm" @click="refreshSpotifyData">
+                <q-tooltip>Refresh</q-tooltip>
+              </q-btn>
+            </div>
+
+            <div v-if="spotifyData.currentPlayback" class="row items-center q-mt-md">
+              <div class="col-auto">
+                <q-avatar square size="80px">
+                  <q-img :src="spotifyData.currentPlayback.album?.image || 'https://via.placeholder.com/80'" />
+                </q-avatar>
+              </div>
+              <div class="col q-ml-md">
+                <div class="text-h6">{{ spotifyData.currentPlayback.name || 'Unknown Track' }}</div>
+                <div class="text-subtitle2">{{ spotifyData.currentPlayback.artist || 'Unknown Artist' }}</div>
+                <q-btn flat color="green" class="q-mt-sm" icon="fab fa-spotify" label="Open in Spotify"
+                  @click="playOnSpotify(spotifyData.currentPlayback.uri)" />
+              </div>
+            </div>
+
+            <div v-else class="empty-state text-grey-6 q-py-lg text-center">
+              <q-icon name="music_off" size="48px" color="grey-7" />
+              <div class="q-mt-sm">No track currently playing</div>
+              <div class="text-caption q-mt-xs">
+                Start playing music on Spotify and click refresh to see what's playing
+              </div>
+            </div>
+          </q-card-section>
+        </q-card>
+      </div>
 
       <!-- Compact Artist Showcase -->
       <div class="artist-showcase q-mb-lg">
@@ -51,6 +86,7 @@
           </div>
         </div>
       </div>
+
 
       <div class="content-area">
         <q-card class="profile-card q-mb-md">
@@ -1010,5 +1046,16 @@ onMounted(() => {
     margin-left: 0;
     margin-top: 16px;
   }
+}
+.currently-playing {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s;
+}
+
+.currently-playing:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 </style>
