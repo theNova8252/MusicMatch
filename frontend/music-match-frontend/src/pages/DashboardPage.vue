@@ -8,7 +8,6 @@
           <q-tooltip>Sign Out</q-tooltip>
         </q-btn>
       </div>
-
       <div class="profile-header q-mb-lg">
         <div class="profile-header-content">
           <q-avatar size="120px" class="profile-avatar">
@@ -20,8 +19,16 @@
           <div class="profile-info q-ml-md">
             <h2 class="text-weight-bold q-my-sm">{{ userData.username || 'Guest' }}</h2>
             <p class="text-grey-8 q-my-sm">{{ userData.email }}</p>
-            <q-btn v-if="!userData.spotifyToken" unelevated rounded color="green" class="q-mt-sm spotify-btn"
+            <q-btn v-if="!spotifyConnected" unelevated rounded color="green" class="q-mt-sm spotify-btn"
               label="Connect Spotify" icon="fab fa-spotify" @click="connectSpotify" />
+            <div v-else class="spotify-status q-mt-sm">
+              <q-chip color="green" text-color="white">
+                <q-avatar class="q-mr-xs">
+                  <q-icon name="fab fa-spotify" />
+                </q-avatar>
+                Spotify Connected
+              </q-chip>
+            </div>
           </div>
         </div>
       </div>
@@ -390,7 +397,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useQuasar } from 'quasar';
 import axios from 'axios';
 
@@ -437,7 +444,6 @@ const privacySettingsDialog = ref(false);
 const editingProfile = ref(false);
 const displayedArtists = ref([]);
 
-// Mock recommendation artists 
 const recommendedArtists = ref([
   { name: 'Olivia Rodrigo', image: 'https://via.placeholder.com/150', genre: 'Pop' },
   { name: 'Post Malone', image: 'https://via.placeholder.com/150', genre: 'Hip-Hop/Pop' },
@@ -472,36 +478,28 @@ const shuffleArtistDisplay = () => {
   console.log("Displayed artists after shuffle:", displayedArtists.value);
 };
 
-// Get random sizes for artist bubbles
 const getRandomSize = (index) => {
   const sizes = ['36px', '44px', '52px', '40px', '48px'];
   return sizes[index % sizes.length];
 };
 
-// Get artist image from cache or placeholder
 const getArtistImagePath = (artist) => {
-  // Check if we have a specific image mapping for this artist
   if (artistImageMap[artist]) {
     return new URL(`../assets/images/${artistImageMap[artist]}`, import.meta.url).href;
   }
 
-  // For artists without specific images, generate a color based on name
   const hash = artist.split('').reduce((acc, char) => char.charCodeAt(0) + acc, 0);
   const hue = hash % 360;
   const backgroundColor = `hsl(${hue}, 70%, 60%)`;
   const textColor = '#FFFFFF';
-
-  // Create a data URL for a colored background with text
   const canvas = document.createElement('canvas');
   canvas.width = 100;
   canvas.height = 100;
   const ctx = canvas.getContext('2d');
 
-  // Draw background
   ctx.fillStyle = backgroundColor;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Draw text
   ctx.fillStyle = textColor;
   ctx.font = 'bold 48px Arial';
   ctx.textAlign = 'center';
@@ -510,7 +508,12 @@ const getArtistImagePath = (artist) => {
 
   return canvas.toDataURL('image/png');
 };
-
+const spotifyConnected = computed(() => {
+  // Consider Spotify connected if we have any Spotify data
+  return spotifyData.value.topArtists?.length > 0 ||
+    spotifyData.value.topTracks?.length > 0 ||
+    userData.value.spotifyToken;
+});
 const removeArtist = async (artist) => {
   try {
     await axios.post('http://localhost:5000/api/auth/remove-artist', { artist }, { withCredentials: true });
@@ -699,7 +702,8 @@ async function fetchUserProfile() {
       email: res.data.user?.email || '',
       profileImage: res.data.user?.profileImage || null,
       dateOfBirth: res.data.user?.dateOfBirth || '',
-      favoriteArtists: res.data.user?.favoriteArtists || []
+      favoriteArtists: res.data.user?.favoriteArtists || [],
+      spotifyToken: res.data.user?.spotifyToken // Track if user has a Spotify token
     };
 
     spotifyData.value = {
@@ -822,10 +826,10 @@ onMounted(() => {
   // Check for Spotify auth callback
   const urlParams = new URLSearchParams(window.location.search);
   const spotifyConnected = urlParams.get('spotify_connected');
+
   setTimeout(() => {
     shuffleArtistDisplay();
   }, 500);
-
 
   if (spotifyConnected === 'true') {
     $q.notify({

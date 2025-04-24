@@ -96,36 +96,71 @@ export const spotifyCallback = async (req, res) => {
     const userData = userResponse.data;
     console.log('👤 Spotify User Data:', userData);
 
-    let user = await User.findOne({ where: { email: userData.email } });
+    // Check if there's an active session (user is already logged in)
+    const isExistingLoggedInUser = req.session && req.session.userId;
+    let user;
 
-    if (!user) {
-      user = await User.create({
-        name: userData.display_name || 'Spotify User',
-        email: userData.email,
-        spotifyToken: accessToken,
-        profileImage: userData.images?.[0]?.url || null,
-        isNewUser: true,
-      });
+    if (isExistingLoggedInUser) {
+      // This is an existing logged-in user connecting Spotify to their account
+      user = await User.findByPk(req.session.userId);
+
+      if (user) {
+        // Update only Spotify-related information, keeping existing data
+        user.spotifyToken = accessToken;
+
+        // Only update profile image if they don't already have one
+        if (!user.profileImage && userData.images?.[0]?.url) {
+          user.profileImage = userData.images[0].url;
+        }
+
+        await user.save();
+        console.log('Existing user updated with Spotify:', user);
+      }
     } else {
-      user.spotifyToken = accessToken;
-      user.profileImage = userData.images?.[0]?.url || user.profileImage;
-      await user.save();
+      // No active session - check if user exists by email
+      user = await User.findOne({ where: { email: userData.email } });
+
+      if (!user) {
+        // This is a completely new user signing up with Spotify
+        user = await User.create({
+          name: userData.display_name || 'Spotify User',
+          email: userData.email,
+          spotifyToken: accessToken,
+          profileImage: userData.images?.[0]?.url || null,
+          isNewUser: true,
+        });
+        console.log('New user created with Spotify:', user);
+      } else {
+        // User exists but wasn't logged in
+        user.spotifyToken = accessToken;
+        if (!user.profileImage && userData.images?.[0]?.url) {
+          user.profileImage = userData.images[0].url;
+        }
+        await user.save();
+        console.log('Existing user (not logged in) updated with Spotify:', user);
+      }
     }
 
-    console.log('User Updated:', user);
-
-    // **Ensure session is saved**
+    // Ensure session is saved
     req.session.userId = user.id;
     req.session.save((err) => {
       if (err) {
         console.error('❌ Session Save Error:', err);
       }
       console.log('✅ Session Saved Successfully:', req.session);
+
       const frontendBase = process.env.FRONTEND_URL || 'http://localhost:9000';
-      res.redirect(user.isNewUser ? `${frontendBase}/onboarding` : `${frontendBase}/dashboard`);
+
+      // If it's a completely new user (first sign-in ever), redirect to onboarding
+      // Otherwise, redirect to dashboard with a query param indicating Spotify connection
+      if (user.isNewUser && !isExistingLoggedInUser) {
+        res.redirect(`${frontendBase}/onboarding`);
+      } else {
+        res.redirect(`${frontendBase}/dashboard?spotify_connected=true`);
+      }
     });
   } catch (error) {
-      console.log('🔥 SPOTIFY CALLBACK ERROR:', error.response?.data || error.message);
+    console.log('🔥 SPOTIFY CALLBACK ERROR:', error.response?.data || error.message);
     res.status(500).send('Failed to authenticate with Spotify.');
   }
 };
