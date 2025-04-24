@@ -2,8 +2,61 @@ import axios from 'axios';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import dotenv from 'dotenv';
+import nodemailer from 'nodemailer';
+import { json } from 'sequelize';
 
 dotenv.config();
+
+export const requestAccountDeletion = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.session.userId);
+
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const link = `${process.env.BACKEND_URL}/api/auth/confirm-delete/${token}`;
+
+    console.log('📧 Sende E-Mail an:', user.email);
+    console.log('🔐 Token:', token);
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    await transporter.sendMail({
+      from: '"MusicMatch" <noreply@musicmatch.com>',
+      to: user.email,
+      subject: 'Bestätigung deiner Account-Löschung',
+      html: `<p>Hey ${user.name},<br>Klicke <a href="${link}">hier</a>, um deinen Account dauerhaft zu löschen.</p>`,
+    });
+
+    res.json({ success: true, message: 'Bestätigungslink per E-Mail gesendet.' });
+  } catch (err) {
+    console.error('E-Mail Fehler:', err.message);
+    res.status(500).json({ success: false, message: 'Fehler beim Versand der E-Mail' });
+  }
+};
+
+
+export const confirmAccountDeletion = async (req, res) => {
+  try {
+    const token = req.params.token;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.id;
+
+    await User.destroy({ where: { id: userId } });
+    return res.redirect(`${process.env.FRONTEND_URL}/login`);
+  } catch (err) {
+    console.error('Token Fehler:', err.message);
+    return res.status(400).send('Link ist ungültig oder abgelaufen.');
+  }
+};
+
+
 
 const generateToken = (user) => {
   return jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });

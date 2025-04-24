@@ -263,7 +263,7 @@
 
         <q-card-actions align="right">
           <q-btn flat label="Cancel" color="primary" v-close-popup />
-          <q-btn flat label="Delete Account" color="negative" @click="deleteAccount" v-close-popup />
+          <q-btn flat label="Delete Account" color="negative" @click="requestAccountDeletion" v-close-popup />
         </q-card-actions>
       </q-card>
       <div class="artist-showcase q-mb-lg">
@@ -554,33 +554,34 @@ const confirmDeleteAccount = () => {
   deleteDialog.value = true;
 };
 
-const deleteAccount = async () => {
+const requestAccountDeletion = async () => {
   try {
-    const response = await axios.delete('http://localhost:5000/api/auth/delete-account', {
-      withCredentials: true,
-    });
+    const response = await axios.post(
+      'http://localhost:5000/api/auth/request-account-deletion',
+      {},
+      { withCredentials: true }
+    );
 
-    console.log('Delete account response:', response.data);
+    console.log('Account deletion requested:', response.data);
 
     $q.notify({
-      color: 'negative',
-      message: 'Account deleted successfully',
+      color: 'info',
+      message: 'Confirmation email sent. Please check your inbox.',
       position: 'center',
-      timeout: 2000
+      timeout: 4000,
     });
-
-    window.location.href = '/login';
   } catch (error) {
-    console.error('Failed to delete account:', error.response?.data || error.message);
-
+    console.error('Error requesting account deletion:', error);
     $q.notify({
       color: 'negative',
-      message: 'Failed to delete account',
+      message: 'Failed to request account deletion.',
       position: 'center',
-      timeout: 2000
+      timeout: 3000,
     });
   }
 };
+
+
 
 const openRecommendations = () => {
   recommendationsDialog.value = true;
@@ -694,7 +695,9 @@ async function fetchUserProfile() {
   try {
     const res = await axios.get('http://localhost:5000/api/auth/profile', { withCredentials: true });
 
-    console.log("📥 User Data Fetched:", res.data);
+    if (!res.data?.user?.id) {
+      throw new Error('No user found');
+    }
 
     userData.value = {
       id: res.data.user?.id || '',
@@ -703,7 +706,7 @@ async function fetchUserProfile() {
       profileImage: res.data.user?.profileImage || null,
       dateOfBirth: res.data.user?.dateOfBirth || '',
       favoriteArtists: res.data.user?.favoriteArtists || [],
-      spotifyToken: res.data.user?.spotifyToken // Track if user has a Spotify token
+      spotifyToken: res.data.user?.spotifyToken
     };
 
     spotifyData.value = {
@@ -712,13 +715,14 @@ async function fetchUserProfile() {
       currentPlayback: res.data.spotifyData?.currentPlayback || null
     };
 
-    // Initialize artist display
     shuffleArtistDisplay();
 
   } catch (error) {
-    console.error('Failed to fetch profile:', error.response?.data || error.message);
+    console.warn('🔁 Redirecting to login because profile failed:', error.message);
+    window.location.href = '/login'; // 👈 hier ist der Redirect
   }
 }
+
 
 async function addArtist() {
   if (!customArtist.value.trim()) return;
@@ -822,31 +826,9 @@ async function uploadProfileImage(event) {
 
 onMounted(() => {
   fetchUserProfile();
-
-  // Check for Spotify auth callback
-  const urlParams = new URLSearchParams(window.location.search);
-  const spotifyConnected = urlParams.get('spotify_connected');
-
-  setTimeout(() => {
-    shuffleArtistDisplay();
-  }, 500);
-
-  if (spotifyConnected === 'true') {
-    $q.notify({
-      color: 'positive',
-      message: 'Spotify connected successfully!',
-      icon: 'fab fa-spotify',
-      position: 'top',
-      timeout: 3000
-    });
-
-    // Remove query params from URL
-    window.history.replaceState({}, document.title, window.location.pathname);
-
-    // Fetch Spotify data
-    refreshSpotifyData();
-  }
+  setInterval(fetchUserProfile, 10000); // check alle 10 Sek.
 });
+
 </script>
 
 <style lang="scss" scoped>

@@ -1,12 +1,12 @@
-const jwt = require('jsonwebtoken');
+import express from 'express';
+import {
+  requestAccountDeletion,
+  confirmAccountDeletion
+} from '../controllers/authController.js';
 
-module.exports = (req, res, next) => {
-  const token = req.headers['authorization']?.split(' ')[1];
-  if (!token) return res.status(401).json({ message: 'No token provided.' });
+const router = express.Router();
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-    if (err) return res.status(403).json({ message: 'Failed to authenticate token.' });
-    req.user = decoded;
-    next();
-  });
-};
+router.post('/request-account-deletion', requestAccountDeletion);
+router.get('/confirm-delete/:token', confirmAccountDeletion);
+
+export default router;

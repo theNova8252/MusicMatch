@@ -6,6 +6,7 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.js';
+console.log('Auth routes loaded:', authRoutes);
 import matchRoutes from './routes/match.js';
 import chatRoutes from './routes/chat.js';
 import sequelize from './config/db.js';
@@ -63,6 +64,7 @@ app.use(bodyParser.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/match', matchRoutes);
 app.use('/api/chat', chatRoutes);
+
 
 app.get('/', (req, res) => res.send('Music Match API is running!'));
 
