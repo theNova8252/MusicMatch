@@ -11,6 +11,8 @@ import matchRoutes from './routes/match.js';
 import chatRoutes from './routes/chat.js';
 import sequelize from './config/db.js';
 import path from 'path';
+import userRoutes from './routes/User.js';
+
 
 
 dotenv.config();
@@ -33,7 +35,6 @@ const pgPool = new Pool({
 
 const app = express();
 const PgStore = PgSession(session);
-app.use('/uploads', express.static('uploads'));
 app.use(
   session({
     store: new PgStore({
@@ -60,7 +61,9 @@ app.use(
 );
 
 app.use(bodyParser.json());
+app.use('/uploads', express.static('uploads'));
 
+app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/match', matchRoutes);
 app.use('/api/chat', chatRoutes);

@@ -28,6 +28,10 @@ const routes = [
     path: '/:catchAll(.*)*',
     redirect: '/login',
   },
+  {
+    path: '/swipe',
+    component: () => import('pages/MatchSwipe.vue'), 
+  },
 ]
 
 export default routes

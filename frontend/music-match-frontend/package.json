@@ -19,7 +19,8 @@
     "axios": "^1.7.9",
     "quasar": "^2.16.0",
     "vue": "^3.4.18",
-    "vue-router": "^4.0.0"
+    "vue-router": "^4.0.0",
+    "vue3-touch-events": "^5.0.13"
   },
   "devDependencies": {
     "@eslint/js": "^9.14.0",

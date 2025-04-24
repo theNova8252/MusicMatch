@@ -3,7 +3,9 @@
     <div class="blur-bg"></div>
     <div class="profile-container q-pa-md">
       <div class="nav-bar q-mb-lg">
-        <h4 class="text-weight-bold q-my-none">MusicMatch</h4>
+        <router-link to="/swipe" class="no-decoration">
+          <h4 class="text-weight-bold q-my-none cursor-pointer text-white">MusicMatch</h4>
+        </router-link>
         <q-btn flat round color="primary" icon="logout" @click="logout">
           <q-tooltip>Sign Out</q-tooltip>
         </q-btn>
