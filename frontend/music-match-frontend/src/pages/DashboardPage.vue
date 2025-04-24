@@ -301,38 +301,6 @@
           <q-btn flat label="Delete Account" color="negative" @click="requestAccountDeletion" v-close-popup />
         </q-card-actions>
       </q-card>
-      <div class="artist-showcase q-mb-lg">
-        <div class="row items-center justify-between q-mb-sm">
-          <h6 class="q-my-none">Your Artists</h6>
-          <q-btn flat dense round color="primary" icon="shuffle" @click="shuffleArtistDisplay">
-            <q-tooltip>Shuffle Artists</q-tooltip>
-          </q-btn>
-        </div>
-
-        <div class="artist-showcase q-mb-lg">
-          <div class="row items-center justify-between q-mb-sm">
-            <h6 class="q-my-none">Your Artists</h6>
-            <q-btn flat dense round color="primary" icon="shuffle" @click="shuffleArtistDisplay">
-              <q-tooltip>Shuffle Artists</q-tooltip>
-            </q-btn>
-          </div>
-
-          <div class="artist-bubbles-container">
-            <div v-if="displayedArtists.length > 0" class="artist-bubbles">
-              <div v-for="(artist, index) in displayedArtists" :key="index" class="artist-bubble"
-                :style="{ width: getRandomSize(index), height: getRandomSize(index) }">
-                <q-avatar :size="getRandomSize(index)">
-                  <img :src="getArtistImagePath(artist)" :alt="artist">
-                  <q-tooltip>{{ artist }}</q-tooltip>
-                </q-avatar>
-              </div>
-            </div>
-            <div v-else class="empty-state text-grey-6 q-py-md text-center">
-              No artists to display. Add some favorite artists!
-            </div>
-          </div>
-        </div>
-      </div>
     </q-dialog>
 
     <q-dialog v-model="logoutDialog" persistent>

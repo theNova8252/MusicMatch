@@ -33,7 +33,7 @@ const pgPool = new Pool({
 
 const app = express();
 const PgStore = PgSession(session);
-
+app.use('/uploads', express.static('uploads'));
 app.use(
   session({
     store: new PgStore({
