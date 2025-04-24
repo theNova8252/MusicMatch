@@ -51,6 +51,9 @@
               <div class="col q-ml-md">
                 <div class="text-h6">{{ spotifyData.currentPlayback.name || 'Unknown Track' }}</div>
                 <div class="text-subtitle2">{{ spotifyData.currentPlayback.artist || 'Unknown Artist' }}</div>
+                <div class="sound-wave q-mt-sm">
+                  <div v-for="i in 8" :key="i" class="sound-bar"></div>
+                </div>
                 <q-btn flat color="green" class="q-mt-sm" icon="fab fa-spotify" label="Open in Spotify"
                   @click="playOnSpotify(spotifyData.currentPlayback.uri)" />
               </div>
@@ -736,6 +739,7 @@ async function fetchUserProfile() {
       const day = String(date.getDate()).padStart(2, '0');
       formattedDateOfBirth = `${year}-${month}-${day}`;
     }
+    console.log("Raw user:", user);
 
     userData.value = {
       id: user.id || '',
@@ -1072,5 +1076,64 @@ onMounted(() => {
 .currently-playing:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.sound-wave {
+  display: flex;
+  align-items: center;
+  height: 20px;
+  gap: 3px;
+}
+
+.sound-bar {
+  width: 3px;
+  height: 100%;
+  background-color: #1DB954;
+  border-radius: 2px;
+  animation: sound-wave-animation 1s infinite;
+}
+
+.sound-bar:nth-child(1) {
+  animation-delay: 0.0s;
+}
+
+.sound-bar:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.sound-bar:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.sound-bar:nth-child(4) {
+  animation-delay: 0.3s;
+}
+
+.sound-bar:nth-child(5) {
+  animation-delay: 0.4s;
+}
+
+.sound-bar:nth-child(6) {
+  animation-delay: 0.5s;
+}
+
+.sound-bar:nth-child(7) {
+  animation-delay: 0.6s;
+}
+
+.sound-bar:nth-child(8) {
+  animation-delay: 0.7s;
+}
+
+@keyframes sound-wave-animation {
+
+  0%,
+  100% {
+    height: 4px;
+  }
+
+  50% {
+    height: 20px;
+  }
 }
 </style>

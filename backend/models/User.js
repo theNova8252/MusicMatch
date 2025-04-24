@@ -13,7 +13,11 @@ User.init(
     artists: DataTypes.JSONB,
     isNewUser: { type: DataTypes.BOOLEAN, defaultValue: true },
     favoriteArtists: {
-      type: DataTypes.STRING, 
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    dateOfBirth: {
+      type: DataTypes.DATEONLY,
       allowNull: true,
     },
   },
