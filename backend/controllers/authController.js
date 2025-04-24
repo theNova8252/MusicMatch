@@ -16,8 +16,8 @@ export const requestAccountDeletion = async (req, res) => {
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
     const link = `${process.env.BACKEND_URL}/api/auth/confirm-delete/${token}`;
 
-    console.log('📧 Sende E-Mail an:', user.email);
-    console.log('🔐 Token:', token);
+    console.log('Sende E-Mail an:', user.email);
+    console.log('Token:', token);
 
     const transporter = nodemailer.createTransport({
       service: 'gmail',
@@ -140,28 +140,24 @@ export const spotifyCallback = async (req, res) => {
     );
 
     const accessToken = tokenResponse.data.access_token;
-    console.log('🔑 Successfully received Spotify Access Token:', accessToken);
+    console.log('Successfully received Spotify Access Token:', accessToken);
 
     const userResponse = await axios.get('https://api.spotify.com/v1/me', {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
 
     const userData = userResponse.data;
-    console.log('👤 Spotify User Data:', userData);
+    console.log('Spotify User Data:', userData);
 
-    // Check if there's an active session (user is already logged in)
     const isExistingLoggedInUser = req.session && req.session.userId;
     let user;
 
     if (isExistingLoggedInUser) {
-      // This is an existing logged-in user connecting Spotify to their account
       user = await User.findByPk(req.session.userId);
 
       if (user) {
-        // Update only Spotify-related information, keeping existing data
         user.spotifyToken = accessToken;
 
-        // Only update profile image if they don't already have one
         if (!user.profileImage && userData.images?.[0]?.url) {
           user.profileImage = userData.images[0].url;
         }
@@ -170,11 +166,9 @@ export const spotifyCallback = async (req, res) => {
         console.log('Existing user updated with Spotify:', user);
       }
     } else {
-      // No active session - check if user exists by email
       user = await User.findOne({ where: { email: userData.email } });
 
       if (!user) {
-        // This is a completely new user signing up with Spotify
         user = await User.create({
           name: userData.display_name || 'Spotify User',
           email: userData.email,
@@ -184,7 +178,6 @@ export const spotifyCallback = async (req, res) => {
         });
         console.log('New user created with Spotify:', user);
       } else {
-        // User exists but wasn't logged in
         user.spotifyToken = accessToken;
         if (!user.profileImage && userData.images?.[0]?.url) {
           user.profileImage = userData.images[0].url;
@@ -198,7 +191,6 @@ export const spotifyCallback = async (req, res) => {
       return res.status(500).send('User creation or retrieval failed.');
     }
 
-    // Ensure session is saved
     req.session.userId = user.id;
     req.session.save((err) => {
       if (err) {
@@ -208,8 +200,6 @@ export const spotifyCallback = async (req, res) => {
 
       const frontendBase = process.env.FRONTEND_URL || 'http://localhost:9000';
 
-      // If it's a completely new user (first sign-in ever), redirect to onboarding
-      // Otherwise, redirect to dashboard with a query param indicating Spotify connection
       if (user.isNewUser && !isExistingLoggedInUser) {
         res.redirect(`${frontendBase}/onboarding`);
       } else {
@@ -222,8 +212,8 @@ export const spotifyCallback = async (req, res) => {
   }
 };
 export async function getSpotifyToken(req, res) {
-  const { code } = req.body; // The authorization code received from frontend
-  const redirectUri = 'http://localhost:5000/api/auth/spotify/callback'; // Must match Spotify Developer settings
+  const { code } = req.body; 
+  const redirectUri = 'http://localhost:5000/api/auth/spotify/callback'; 
 
   if (!code) {
     return res.status(400).json({ error: 'Authorization code is required.' });
@@ -248,7 +238,6 @@ export async function getSpotifyToken(req, res) {
 
     const { access_token, refresh_token, expires_in } = response.data;
 
-    // Store the token in the session or database
     req.session.spotifyAccessToken = access_token;
     req.session.spotifyRefreshToken = refresh_token;
     req.session.spotifyTokenExpires = Date.now() + expires_in * 1000;
@@ -261,7 +250,7 @@ export async function getSpotifyToken(req, res) {
 }
 
 export async function refreshSpotifyToken(req, res) {
-  const refreshToken = req.session.spotifyRefreshToken; // Retrieve refresh token from session
+  const refreshToken = req.session.spotifyRefreshToken; 
 
   if (!refreshToken) {
     return res.status(401).json({ error: 'No refresh token available.' });
@@ -285,7 +274,6 @@ export async function refreshSpotifyToken(req, res) {
 
     const { access_token, expires_in } = response.data;
 
-    // Update session with new token
     req.session.spotifyAccessToken = access_token;
     req.session.spotifyTokenExpires = Date.now() + expires_in * 1000;
 
@@ -329,7 +317,7 @@ export const googleCallback = async (req, res) => {
 
     const userData = userResponse.data;
     if (!userData.email) {
-      console.error('⚠️ Spotify user data has no email:', userData);
+      console.error('Spotify user data has no email:', userData);
       return res
         .status(400)
         .send('Spotify account has no email address. Please use a different account.');
@@ -373,7 +361,7 @@ export const googleCallback = async (req, res) => {
 export const saveOnboardingData = async (req, res) => {
   try {
     console.log('Received Onboarding Data:', req.body);
-    console.log('Received File:', req.file); // Debug file upload
+    console.log('Received File:', req.file); 
 
     if (!req.session.userId) {
       return res.status(401).json({ message: 'Unauthorized: No session found.' });
@@ -410,10 +398,8 @@ export const saveOnboardingData = async (req, res) => {
       }
     }
 
-    // Mark user as no longer new
     user.isNewUser = false;
 
-    // Save changes to the database
     await user.save();
 
     console.log('User successfully updated:', user);
@@ -458,7 +444,6 @@ export const getUserProfile = async (req, res) => {
       try {
         const token = user.spotifyToken;
 
-        // Fetch top artists
         const topArtistsResponse = await axios.get(
           'https://api.spotify.com/v1/me/top/artists?limit=10',
           {
@@ -466,7 +451,6 @@ export const getUserProfile = async (req, res) => {
           },
         );
 
-        // Fetch top tracks
         const topTracksResponse = await axios.get(
           'https://api.spotify.com/v1/me/top/tracks?limit=10',
           {
@@ -474,7 +458,6 @@ export const getUserProfile = async (req, res) => {
           },
         );
 
-        // Fetch currently playing track
         try {
           const currentPlaybackResponse = await axios.get(
             'https://api.spotify.com/v1/me/player/currently-playing',
@@ -500,7 +483,6 @@ export const getUserProfile = async (req, res) => {
             };
           }
         } catch (playbackError) {
-          // Handle case where user might not be playing anything
           console.log(
             'No track currently playing or error fetching playback:',
             playbackError.message,
@@ -525,7 +507,7 @@ export const getUserProfile = async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        profileImage: profileImageUrl, // Fixed variable name here
+        profileImage: profileImageUrl, 
         dateOfBirth: user.dateOfBirth,
         favoriteArtists: user.favoriteArtists ? user.favoriteArtists.split(', ') : [],
         isNewUser: user.isNewUser,
@@ -537,7 +519,6 @@ export const getUserProfile = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch user profile.' });
   }
 };
-// In your auth controller file
 export const refreshSpotifyData = async (req, res) => {
   try {
     if (!req.session || !req.session.userId) {
@@ -559,7 +540,6 @@ export const refreshSpotifyData = async (req, res) => {
       try {
         const token = user.spotifyToken;
 
-        // Fetch top artists
         const topArtistsResponse = await axios.get(
           'https://api.spotify.com/v1/me/top/artists?limit=10',
           {
@@ -567,7 +547,6 @@ export const refreshSpotifyData = async (req, res) => {
           },
         );
 
-        // Fetch top tracks
         const topTracksResponse = await axios.get(
           'https://api.spotify.com/v1/me/top/tracks?limit=10',
           {
@@ -575,7 +554,6 @@ export const refreshSpotifyData = async (req, res) => {
           },
         );
 
-        // Fetch currently playing track
         try {
           const currentPlaybackResponse = await axios.get(
             'https://api.spotify.com/v1/me/player/currently-playing',
@@ -614,6 +592,38 @@ export const refreshSpotifyData = async (req, res) => {
     res.status(500).json({ message: 'Failed to refresh Spotify data.' });
   }
 };
+export const saveUserDetails = async (req, res) => {
+  try {
+    if (!req.session || !req.session.userId) {
+      return res.status(401).json({ message: 'Unauthorized: No session found.' });
+    }
+
+    const { username, dateOfBirth } = req.body;
+    
+    const user = await User.findByPk(req.session.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Update user details
+    user.name = username;
+    user.dateOfBirth = dateOfBirth;
+    await user.save();
+
+    res.json({ 
+      message: 'User details updated successfully',
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        dateOfBirth: user.dateOfBirth
+      }
+    });
+  } catch (error) {
+    console.error('Failed to update user details:', error);
+    res.status(500).json({ message: 'Failed to update user details.' });
+  }
+};
 export const logoutUser = (req, res) => {
   req.session.destroy((err) => {
     if (err) {
@@ -621,7 +631,6 @@ export const logoutUser = (req, res) => {
       return res.status(500).json({ message: 'Failed to log out.' });
     }
 
-    // Clear all session cookies
     res.clearCookie('connect.sid', { path: '/' });
     res.clearCookie('token');
 
@@ -651,25 +660,6 @@ export const addCustomArtist = async (req, res) => {
   }
 };
 
-export const saveUserDetails = async (req, res) => {
-  try {
-    const { username, dateOfBirth } = req.body;
-    const user = await User.findByPk(req.session.userId);
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    user.username = username;
-    user.dateOfBirth = dateOfBirth;
-    await user.save();
-
-    res.json({ message: 'User details saved successfully!' });
-  } catch (error) {
-    console.error('Failed to save user details:', error.message);
-    res.status(500).json({ message: 'Failed to save user details.' });
-  }
-};
 
 export const fetchSpotifyArtists = async (req, res) => {
   try {

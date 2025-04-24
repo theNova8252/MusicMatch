@@ -7,7 +7,6 @@ import {
   googleCallback,
   addCustomArtist,
   logoutUser,
-  saveUserDetails,
   fetchSpotifyArtists,
   saveOnboardingData,
   deleteAccount,
@@ -16,7 +15,8 @@ import {
   confirmAccountDeletion,
   refreshSpotifyToken,
   removeCustomArtist,
-  refreshSpotifyData
+  refreshSpotifyData,
+  saveUserDetails,
 } from '../controllers/authController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 import User from '../models/User.js';
@@ -26,7 +26,6 @@ const upload = multer({ dest: 'uploads/' });
 
 const router = express.Router();
 
-// Test Route
 router.get('/test', (req, res) => {
   res.send('Auth route is working!');
 });
@@ -38,7 +37,6 @@ router.get('/google', googleLogin);
 router.get('/google/callback', googleCallback);
 router.post('/save-onboarding-data', authMiddleware, upload.single('profileImage'), saveOnboardingData);
 router.get('/logout', logoutUser);
-router.post('/save-user-details', authMiddleware, saveUserDetails);
 router.get('/fetch-spotify-artists', authMiddleware, fetchSpotifyArtists);
 router.delete('/delete-account', authMiddleware, deleteAccount);
 router.post('/update-account', authMiddleware, saveUserDetails);
@@ -47,10 +45,10 @@ router.post('/request-account-deletion', authMiddleware, requestAccountDeletion)
 router.get('/confirm-delete/:token', confirmAccountDeletion);
 
 
-router.post("/spotify/token", getSpotifyToken);  // Route to exchange code for access token
-router.post("/spotify/refresh", refreshSpotifyToken); // Route to refresh token
+router.post("/spotify/token", getSpotifyToken); 
+router.post("/spotify/refresh", refreshSpotifyToken); 
 router.post('/remove-artist', authMiddleware, removeCustomArtist);
 router.get('/refresh-spotify-data', refreshSpotifyData);
-
+router.post('/save-user-details', saveUserDetails);
 
 export default router;

@@ -32,7 +32,6 @@
           </div>
         </div>
       </div>
-      <!-- Replace the current "Currently Playing" section with this improved version -->
       <div class="currently-playing q-mb-lg">
         <q-card class="profile-card">
           <q-card-section>
@@ -68,7 +67,6 @@
         </q-card>
       </div>
 
-      <!-- Compact Artist Showcase -->
       <div class="artist-showcase q-mb-lg">
         <div class="row items-center justify-between q-mb-sm">
           <h6 class="q-my-none">Your Artists</h6>
@@ -244,7 +242,6 @@
           </div>
         </div>
 
-        <!-- Account Settings Section -->
         <q-card class="profile-card q-mt-md">
           <q-card-section>
             <div class="section-header">
@@ -285,7 +282,6 @@
       </div>
     </div>
 
-    <!-- Dialogs -->
     <q-dialog v-model="deleteDialog" persistent>
       <q-card>
         <q-card-section class="row items-center">
@@ -498,7 +494,6 @@ const privacySettings = ref({
   allowMessages: true
 });
 
-// Select random artists to display in the bubble showcase
 const shuffleArtistDisplay = () => {
   console.log("Shuffling artists:", userData.value.favoriteArtists);
 
@@ -545,7 +540,6 @@ const getArtistImagePath = (artist) => {
   return canvas.toDataURL('image/png');
 };
 const spotifyConnected = computed(() => {
-  // Consider Spotify connected if we have any Spotify data
   return spotifyData.value.topArtists?.length > 0 ||
     spotifyData.value.topTracks?.length > 0 ||
     userData.value.spotifyToken;
@@ -581,7 +575,6 @@ const connectSpotify = () => {
 const playOnSpotify = (uri) => {
   if (!uri) return;
 
-  // Open in Spotify app or web player
   const spotifyUrl = `https://open.spotify.com/track/${uri.split(':')[2]}`;
   window.open(spotifyUrl, '_blank');
 };
@@ -629,7 +622,6 @@ const openPrivacySettings = () => {
 
 const savePrivacySettings = async () => {
   try {
-    // Mock API call - in a real app, this would save settings to backend
     await new Promise(resolve => setTimeout(resolve, 600));
 
     $q.notify({
@@ -724,7 +716,6 @@ const signOut = async () => {
 
 const cancelEditing = () => {
   editingProfile.value = false;
-  // Reset to original values if needed
 };
 
 async function fetchUserProfile() {
@@ -735,14 +726,25 @@ async function fetchUserProfile() {
       throw new Error('No user found');
     }
 
+    const user = res.data.user || {};
+
+    let formattedDateOfBirth = '';
+    if (user.dateOfBirth) {
+      const date = new Date(user.dateOfBirth);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      formattedDateOfBirth = `${year}-${month}-${day}`;
+    }
+
     userData.value = {
-      id: res.data.user?.id || '',
-      username: res.data.user?.name || 'Guest',
-      email: res.data.user?.email || '',
-      profileImage: res.data.user?.profileImage || null,
-      dateOfBirth: res.data.user?.dateOfBirth || '',
-      favoriteArtists: res.data.user?.favoriteArtists || [],
-      spotifyToken: res.data.user?.spotifyToken
+      id: user.id || '',
+      username: user.name || 'Guest',
+      email: user.email || '',
+      profileImage: user.profileImage || null,
+      dateOfBirth: formattedDateOfBirth,
+      favoriteArtists: user.favoriteArtists || [],
+      spotifyToken: user.spotifyToken
     };
 
     spotifyData.value = {
@@ -755,7 +757,7 @@ async function fetchUserProfile() {
 
   } catch (error) {
     console.warn('🔁 Redirecting to login because profile failed:', error.message);
-    window.location.href = '/login'; // 👈 hier ist der Redirect
+    window.location.href = '/login';
   }
 }
 
@@ -767,6 +769,7 @@ async function addArtist() {
   addArtistToFavorites(artist);
   customArtist.value = '';
 }
+
 
 async function addArtistToFavorites(artist) {
   try {
@@ -800,13 +803,22 @@ async function addArtistToFavorites(artist) {
 
 async function updateAccountInfo() {
   try {
-    await axios.post('http://localhost:5000/api/auth/save-user-details',
+    console.log('Saving username:', userData.value.username);
+
+    const response = await axios.post(
+      'http://localhost:5000/api/auth/save-user-details',
       {
         username: userData.value.username,
         dateOfBirth: userData.value.dateOfBirth
       },
       { withCredentials: true }
     );
+
+    console.log('Server response:', response.data);
+
+    if (response.data && response.data.user) {
+      userData.value.username = response.data.user.username || userData.value.username;
+    }
 
     editingProfile.value = false;
 
@@ -817,6 +829,9 @@ async function updateAccountInfo() {
       position: 'top',
       timeout: 2000
     });
+
+    await fetchUserProfile();
+
   } catch (error) {
     console.error('Failed to update profile:', error.response?.data || error.message);
     $q.notify({
@@ -862,7 +877,7 @@ async function uploadProfileImage(event) {
 
 onMounted(() => {
   fetchUserProfile();
-  setInterval(fetchUserProfile, 10000); // check alle 10 Sek.
+  setInterval(fetchUserProfile, 10000); 
 });
 
 </script>

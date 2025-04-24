@@ -2,14 +2,12 @@
   <q-page class="flex flex-center column bg-grey-1">
     <div class="onboarding-wrapper">
       <div class="onboarding-container">
-        <!-- Animated Gradient Header -->
         <div class="header-section q-pa-md">
           <h1 class="text-h3 text-bold gradient-text">MusicMatch</h1>
           <p class="text-subtitle2 text-grey-7 q-mb-none">Find your sound. Connect with your tribe.</p>
         </div>
 
         <q-form @submit="saveOnboardingData" class="form-content q-px-md q-pb-md">
-          <!-- User Info Section -->
           <div class="form-section">
             <div class="row q-col-gutter-md">
               <div class="col-12 col-md-6">
@@ -31,7 +29,6 @@
             </div>
           </div>
 
-          <!-- Profile Picture Section -->
           <div class="form-section profile-upload-section">
             <div class="row items-center justify-between">
               <div class="col-12 col-md-4">
@@ -60,14 +57,12 @@
             </div>
           </div>
 
-          <!-- Music Preferences Section -->
           <div class="form-section">
             <div class="section-header">
               <div class="text-subtitle1 text-weight-medium text-primary q-mb-xs">Your Music Vibe</div>
               <div class="text-caption text-grey-7">Select artists that match your taste</div>
             </div>
 
-            <!-- Artist Selection Grid -->
             <div class="artists-grid">
               <div v-for="artist in exampleArtists" :key="artist.name" class="artist-tile"
                 :class="{ 'artist-selected': favoriteArtists.includes(artist.name) }"
@@ -86,7 +81,6 @@
             </div>
           </div>
 
-          <!-- Add Your Own Artists Section -->
           <div class="form-section">
             <div class="text-subtitle1 text-weight-medium text-primary q-mb-sm">Add Your Own Artists</div>
             <div class="row items-center q-gutter-sm">
@@ -99,7 +93,6 @@
               </q-input>
             </div>
 
-            <!-- Selected Artists Chips -->
             <div class="selected-artists q-mt-md" v-if="favoriteArtists.length">
               <div class="text-caption text-grey-7 q-mb-xs">Selected Artists</div>
               <div class="row q-gutter-xs">
@@ -111,7 +104,6 @@
             </div>
           </div>
 
-          <!-- Submit Button -->
           <div class="form-section q-mt-md">
             <q-btn type="submit" class="submit-btn" :loading="loading" :disable="!isFormValid">
               <span class="text-subtitle2">Start Your Journey</span>
