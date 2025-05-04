@@ -20,6 +20,10 @@ User.init(
       type: DataTypes.DATEONLY,
       allowNull: true,
     },
+    favoriteGenres: {
+      type: DataTypes.STRING, 
+      allowNull: true,
+    },
   },
   {
     sequelize,

@@ -13,10 +13,6 @@ const routes = [
     component: () => import('pages/DashboardPage.vue'), // ✅ Ensure correct path
   },
   {
-    path: '/match',
-    component: () => import('pages/MatchPage.vue'), // ✅ Ensure correct path
-  },
-  {
     path: '/:catchAll(.*)*',
     component: () => import('pages/ErrorNotFound.vue'),
   },

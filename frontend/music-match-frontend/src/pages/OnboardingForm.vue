@@ -92,6 +92,19 @@
                 </template>
               </q-input>
             </div>
+            <div class="form-section">
+              <div class="section-header">
+                <div class="text-subtitle1 text-weight-medium text-primary q-mb-xs">Your Favorite Genres</div>
+                <div class="text-caption text-grey-7">Select genres you enjoy most</div>
+              </div>
+
+              <div class="row q-col-gutter-sm q-mb-sm">
+                <q-chip v-for="genre in genreOptions" :key="genre" clickable
+                  :class="{ 'bg-primary text-white': favoriteGenres.includes(genre) }" @click="toggleGenre(genre)">
+                  {{ genre }}
+                </q-chip>
+              </div>
+            </div>
 
             <div class="selected-artists q-mt-md" v-if="favoriteArtists.length">
               <div class="text-caption text-grey-7 q-mb-xs">Selected Artists</div>
@@ -131,6 +144,19 @@ const favoriteArtists = ref([]);
 const artistInput = ref('');
 const loading = ref(false);
 
+const genreOptions = [
+  'Pop', 'Rock', 'Hip Hop', 'R&B', 'Jazz', 'Classical', 'EDM', 'Indie', 'K-Pop',
+  'Metal', 'Funk', 'Reggaeton', 'Country', 'Soul', 'House', 'Trap', 'Techno',
+  'Drill', 'Latin', 'Blues', 'Afrobeats'
+];
+
+const favoriteGenres = ref([]);
+
+const toggleGenre = (genre) => {
+  const i = favoriteGenres.value.indexOf(genre);
+  if (i === -1) favoriteGenres.value.push(genre);
+  else favoriteGenres.value.splice(i, 1);
+};
 const exampleArtists = [
   { name: 'Billie Eilish', image: '/src/assets/images/billie.jpg', genre: 'Pop' },
   { name: 'Dua Lipa', image: '/src/assets/images/dualipa.jpg', genre: 'Dance Pop' },
@@ -197,6 +223,7 @@ const saveOnboardingData = async () => {
     formData.append('username', username.value.trim());
     formData.append('dateOfBirth', dateOfBirth.value);
     formData.append('email', email.value.trim());
+    formData.append('favoriteGenres', JSON.stringify(favoriteGenres.value));
 
     if (profileImage.value instanceof File) {
       formData.append('profileImage', profileImage.value);

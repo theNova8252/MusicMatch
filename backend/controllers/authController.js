@@ -397,6 +397,16 @@ export const saveOnboardingData = async (req, res) => {
         console.error('Error parsing favoriteArtists:', e);
       }
     }
+    if (req.body.favoriteGenres) {
+      try {
+        const genres = JSON.parse(req.body.favoriteGenres);
+        if (Array.isArray(genres)) {
+          user.favoriteGenres = genres.join(', ');
+        }
+      } catch (e) {
+        console.error('Error parsing favoriteGenres:', e);
+      }
+    }
 
     user.isNewUser = false;
 
@@ -415,6 +425,7 @@ export const saveOnboardingData = async (req, res) => {
         profileImage: user.profileImage,
         favoriteArtists: user.favoriteArtists ? user.favoriteArtists.split(', ') : [],
         isNewUser: user.isNewUser,
+        favoriteGenres: user.favoriteGenres ? user.favoriteGenres.split(', ') : [],
       },
     });
   } catch (error) {
