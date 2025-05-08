@@ -249,12 +249,17 @@
       <p>You've seen all available matches</p>
       <button class="go-to-dashboard" @click="navigateToDashboard">Return to Dashboard</button>
     </div>
+    <MatchPopup :visible="showMatchPopup" :matchedUser="matchedUser" :currentUser="currentUser" @close="closePopup" />
   </div>
 </template>
 
 <script>
+import MatchPopup from '../components/MatchPopup.vue';
 export default {
   name: 'SwipeCards',
+  components: {
+    MatchPopup
+  },
   data() {
     return {
       visibleUsers: [],
@@ -264,12 +269,19 @@ export default {
       leftSwipeOpacity: 0,
       rightSwipeOpacity: 0,
       isLoading: true,
-      error: null
-    }
+      error: null,
+      showMatchPopup: false,
+      matchedUser: null,
+      seenUserIds: new Set()
+
+    } 
   },
   computed: {
     filteredUsers() {
       return this.visibleUsers.filter(user => user);
+    },
+    currentUser() {
+      return this.$store.state.user || {};
     }
   },
   methods: {
@@ -296,7 +308,9 @@ export default {
 
         if (this.visibleUsers.length === 0) {
           // Initial full setup
-          this.visibleUsers = newUserData.map(user => {
+          this.visibleUsers = newUserData
+            .filter(user => !this.seenUserIds.has(user.id)) 
+            .map(user => {
             if (!user || typeof user !== 'object') return null;
 
             return {
@@ -366,6 +380,7 @@ export default {
       }
     },
 
+
     parseArtists(artistsString) {
       if (!artistsString || typeof artistsString !== 'string') return [];
       return artistsString.split(',').map(artist => artist.trim()).filter(Boolean);
@@ -414,6 +429,8 @@ export default {
       if (this.filteredUsers.length === 0) return;
 
       if (this.visibleUsers[this.activeCardIndex]) {
+        const userId = this.visibleUsers[this.activeCardIndex].id;
+        this.seenUserIds.add(userId); // Mark as seen
         this.visibleUsers[this.activeCardIndex].direction = 'left';
 
         setTimeout(() => {
@@ -426,12 +443,15 @@ export default {
       }
     },
 
+
     swipeRight() {
       if (this.filteredUsers.length === 0) return;
 
       if (this.visibleUsers[this.activeCardIndex]) {
+        const userId = this.visibleUsers[this.activeCardIndex].id;
+        this.seenUserIds.add(userId); // Mark as seen
         this.visibleUsers[this.activeCardIndex].direction = 'right';
-        this.sendMatchToBackend(this.filteredUsers[this.activeCardIndex].id);
+        this.likeUser(userId);
 
         setTimeout(() => {
           this.visibleUsers.splice(this.activeCardIndex, 1);
@@ -443,35 +463,57 @@ export default {
       }
     },
 
-    sendMatchToBackend(userId) {
-      if (!userId) return;
-
-      fetch('http://localhost:5000/api/matches', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ userId })
-      })
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(`API responded with status ${response.status}`);
-          }
-          return response.json();
-        })
-        .then(data => console.log('Match successful:', data))
-        .catch(err => console.error('Failed to send match:', err));
+    async likeUser(userId) {
+      try {
+        const res = await fetch(`http://localhost:5000/api/users/like/${userId}`, {
+          method: 'POST',
+          credentials: 'include',
+        });
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`Failed like: ${res.status} - ${errorText}`);
+        }
+        const data = await res.json();
+        if (data.mutualMatch) {
+          // Replace the alert with this:
+          this.matchedUser = this.filteredUsers[this.activeCardIndex];
+          this.showMatchPopup = true;
+        }
+      } catch (err) {
+        console.error('Failed to like user:', err);
+      }
     }
   },
+  closeMatchPopup() {
+    this.showMatchPopup = false;
+    this.matchedUser = null;
+  },
+
   mounted() {
     this.fetchAllUsers();
     this.pollingInterval = setInterval(this.fetchAllUsers, 5000);
+
+    this.socket = new WebSocket('ws://localhost:5000');
+    this.socket.addEventListener('message', (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'mutualMatch') {
+          console.log('Mutual match detected:', data);
+          this.matchedUser = data.user;
+          this.showMatchPopup = true;
+        }
+      } catch (err) {
+        console.error('Error processing WebSocket message:', err);
+      }
+    });
+
   },
 
   beforeUnmount() {
     clearInterval(this.pollingInterval);
   },
+ 
+  
 }
 
 </script>

@@ -31,11 +31,18 @@ User.init(
       type: DataTypes.TEXT,
       allowNull: true,
     },
+    
   },
   {
     sequelize,
     modelName: 'User',
   },
 );
+User.belongsToMany(User, {
+  through: 'UserLike',
+  as: 'LikedUsers',
+  foreignKey: 'fromUserId',
+  otherKey: 'toUserId',
+});
 
 export default User;

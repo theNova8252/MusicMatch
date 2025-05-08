@@ -4,6 +4,7 @@ import User from '../models/User.js';
 import { Op } from 'sequelize';
 import axios from 'axios';
 import { getFreshSpotifyToken } from '../utils/spotify.js';
+import { likeUser } from '../controllers/userController.js';
 
 const router = express.Router();
 
@@ -138,5 +139,6 @@ router.get('/all', authMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Something went wrong.' });
   }
 });
+router.post('/like/:toUserId', authMiddleware, likeUser);
 
 export default router;

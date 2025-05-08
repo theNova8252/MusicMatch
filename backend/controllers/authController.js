@@ -132,9 +132,9 @@ export const spotifyCallback = async (req, res) => {
       {
         grant_type: 'authorization_code',
         code,
-        redirect_uri: REDIRECT_URI,
-        client_id: CLIENT_ID,
-        client_secret: CLIENT_SECRET,
+        redirect_uri: process.env.SPOTIFY_REDIRECT_URI,
+        client_id: process.env.SPOTIFY_CLIENT_ID,
+        client_secret: process.env.SPOTIFY_CLIENT_SECRET,
       },
       {
         headers: {
@@ -145,13 +145,8 @@ export const spotifyCallback = async (req, res) => {
 
     const { access_token, refresh_token } = tokenRes.data;
 
-    await user.update({
-      spotifyToken: access_token,
-      spotifyRefreshToken: refresh_token,
-    });
-
     const userResponse = await axios.get('https://api.spotify.com/v1/me', {
-      headers: { Authorization: `Bearer ${accessToken}` },
+      headers: { Authorization: `Bearer ${access_token}` },
     });
 
     const userData = userResponse.data;
@@ -164,7 +159,8 @@ export const spotifyCallback = async (req, res) => {
       user = await User.findByPk(req.session.userId);
 
       if (user) {
-        user.spotifyToken = accessToken;
+        user.spotifyToken = access_token;
+        user.spotifyRefreshToken = refresh_token;
 
         if (!user.profileImage && userData.images?.[0]?.url) {
           user.profileImage = userData.images[0].url;
@@ -180,16 +176,20 @@ export const spotifyCallback = async (req, res) => {
         user = await User.create({
           name: userData.display_name || 'Spotify User',
           email: userData.email,
-          spotifyToken: accessToken,
+          spotifyToken: access_token,
+          spotifyRefreshToken: refresh_token,
           profileImage: userData.images?.[0]?.url || null,
           isNewUser: true,
         });
         console.log('New user created with Spotify:', user);
       } else {
-        user.spotifyToken = accessToken;
+        user.spotifyToken = access_token;
+        user.spotifyRefreshToken = refresh_token;
+
         if (!user.profileImage && userData.images?.[0]?.url) {
           user.profileImage = userData.images[0].url;
         }
+
         await user.save();
         console.log('Existing user (not logged in) updated with Spotify:', user);
       }
@@ -233,7 +233,7 @@ export async function getSpotifyToken(req, res) {
       new URLSearchParams({
         grant_type: 'authorization_code',
         code: code,
-        redirect_uri: redirectUri,
+        redirect_uri: process.env.SPOTIFY_REDIRECT_URI,
         client_id: process.env.SPOTIFY_CLIENT_ID,
         client_secret: process.env.SPOTIFY_CLIENT_SECRET,
       }).toString(),
