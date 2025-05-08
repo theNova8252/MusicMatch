@@ -127,20 +127,28 @@ export const spotifyCallback = async (req, res) => {
   if (!code) return res.status(400).send('No authorization code provided.');
 
   try {
-    const tokenResponse = await axios.post(
+    const tokenRes = await axios.post(
       'https://accounts.spotify.com/api/token',
-      new URLSearchParams({
+      {
         grant_type: 'authorization_code',
         code,
-        redirect_uri: process.env.SPOTIFY_REDIRECT_URI,
-        client_id: process.env.SPOTIFY_CLIENT_ID,
-        client_secret: process.env.SPOTIFY_CLIENT_SECRET,
-      }).toString(),
-      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } },
+        redirect_uri: REDIRECT_URI,
+        client_id: CLIENT_ID,
+        client_secret: CLIENT_SECRET,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      },
     );
 
-    const accessToken = tokenResponse.data.access_token;
-    console.log('Successfully received Spotify Access Token:', accessToken);
+    const { access_token, refresh_token } = tokenRes.data;
+
+    await user.update({
+      spotifyToken: access_token,
+      spotifyRefreshToken: refresh_token,
+    });
 
     const userResponse = await axios.get('https://api.spotify.com/v1/me', {
       headers: { Authorization: `Bearer ${accessToken}` },

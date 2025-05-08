@@ -1,14 +1,20 @@
 <template>
   <div class="swipe-container">
+    <button class="back-button" @click="navigateToDashboard">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5M12 19l-7-7 7-7" />
+      </svg>
+      <span>Dashboard</span>
+    </button>
+
     <div class="card-stack" v-if="filteredUsers.length">
       <div v-for="(user, index) in filteredUsers" :key="user.id" class="swipe-card" :class="{
         'active': index === activeCardIndex,
         'swipe-left': user.direction === 'left',
         'swipe-right': user.direction === 'right'
-      }" :style="getCardStyle(index)" @mousedown="startDrag($event, index)" @touchstart="startDrag($event, index)"
-        @mousemove="onDrag($event)" @touchmove="onDrag($event)" @mouseup="endDrag()" @touchend="endDrag()">
+      }" :style="getCardStyle(index)">
         <div class="card-inner">
-          <!-- Card image -->
           <div class="card-image" :style="{ backgroundImage: `url(${getFullImageUrl(user.profileImage)})` }">
             <div class="match-badge" v-if="user.compatibility && user.compatibility > 0">
               {{ user.compatibility }}% Match
@@ -23,7 +29,6 @@
             </div>
           </div>
 
-          <!-- Card content -->
           <div class="card-content">
             <div class="user-header">
               <h2 class="user-name">{{ user.name || 'User' }}</h2>
@@ -42,7 +47,71 @@
               </button>
             </div>
 
-            <!-- Shared Genres Section -->
+            <div class="music-match-section">
+              <div class="music-match-header">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 18V5l12-2v13"></path>
+                  <circle cx="6" cy="18" r="3"></circle>
+                  <circle cx="18" cy="16" r="3"></circle>
+                </svg>
+                <h3>Music Match</h3>
+                <div class="match-percentage">{{ user.compatibility }}%</div>
+              </div>
+            </div>
+            <!-- Add this after the music-match-section div and before the sharedArtists section -->
+            <div v-if="user.currentlyPlaying" class="music-section currently-playing">
+              <div class="section-header">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <circle cx="12" cy="10" r="3"></circle>
+                  <path d="M7 15.5l2.5-2.5 2.5 2.5 2.5-2.5 2.5 2.5"></path>
+                </svg>
+                <h3>Currently Playing</h3>
+              </div>
+              <div class="current-track">
+                <div class="playing-animation">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+                <div class="current-track-info">
+                  <div class="current-track-title">{{ user.currentlyPlaying.title }}</div>
+                  <div class="current-track-artist">{{ user.currentlyPlaying.artist }}</div>
+                </div>
+                <button class="play-button" @click="playSpotifyTrack(user.currentlyPlaying?.uri)">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div v-if="user.sharedArtists && user.sharedArtists.length" class="music-section">
+              <div class="section-header">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                  <line x1="12" y1="19" x2="12" y2="23"></line>
+                  <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+                <h3>Shared Artists</h3>
+              </div>
+              <div class="artists-list">
+                <div v-for="(artist, i) in parseSharedArtists(user.sharedArtists)" :key="'shared-artist-' + i"
+                  class="artist-item">
+                  <div class="artist-avatar">
+                    <span>{{ artist.charAt(0).toUpperCase() }}</span>
+                  </div>
+                  <span class="artist-name">{{ artist }}</span>
+                </div>
+              </div>
+            </div>
+
+
             <div v-if="user.sharedGenres && user.sharedGenres.length" class="music-section">
               <div class="section-header">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -60,7 +129,6 @@
               </div>
             </div>
 
-            <!-- Favorite Genres Section -->
             <div v-if="user.favoriteGenres && user.favoriteGenres.length" class="music-section">
               <div class="section-header">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -68,7 +136,7 @@
                   <path d="M12 18.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"></path>
                   <path d="M13.5 13.5V6a1.5 1.5 0 0 0-3 0"></path>
                 </svg>
-                <h3>Ihre Lieblingsgenres</h3>
+                <h3>Favorite Genres</h3>
               </div>
               <div class="genres-chips">
                 <span v-for="(genre, i) in user.favoriteGenres" :key="'fav-' + i" class="genre-chip">
@@ -77,8 +145,7 @@
               </div>
             </div>
 
-            <!-- Favorite Artists Section -->
-            <div v-if="user.favoriteArtists && user.favoriteArtists.length" class="music-section">
+            <div v-if="user.favoriteArtists" class="music-section">
               <div class="section-header">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -87,21 +154,18 @@
                   <line x1="12" y1="19" x2="12" y2="23"></line>
                   <line x1="8" y1="23" x2="16" y2="23"></line>
                 </svg>
-                <h3>Lieblingskünstler</h3>
+                <h3>Favorite Artists</h3>
               </div>
               <div class="artists-list">
-                <div v-for="(artist, i) in user.favoriteArtists" :key="'artist-' + i" class="artist-item">
-                  <div class="artist-avatar"
-                    :style="{ backgroundImage: artist && artist.image ? `url(${artist.image})` : 'none' }">
-                    <span v-if="!artist || !artist.image">{{ artist && artist.name ? artist.name.charAt(0) : '?'
-                      }}</span>
+                <div v-for="(artist, i) in parseArtists(user.favoriteArtists)" :key="'artist-' + i" class="artist-item">
+                  <div class="artist-avatar">
+                    <span>{{ artist.charAt(0).toUpperCase() }}</span>
                   </div>
-                  <span class="artist-name">{{ artist && artist.name ? artist.name : 'Unknown Artist' }}</span>
+                  <span class="artist-name">{{ artist }}</span>
                 </div>
               </div>
             </div>
 
-            <!-- Top Tracks Section -->
             <div v-if="user.topTracks && user.topTracks.length" class="music-section">
               <div class="section-header">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -118,7 +182,7 @@
                     <div class="track-title">{{ track && track.title ? track.title : 'Unknown Track' }}</div>
                     <div class="track-artist">{{ track && track.artist ? track.artist : 'Unknown Artist' }}</div>
                   </div>
-                  <button class="play-button">
+                  <button class="play-button" @click="playSpotifyTrack(user.currentlyPlaying?.uri)">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <polygon points="5 3 19 12 5 21 5 3"></polygon>
@@ -128,7 +192,6 @@
               </div>
             </div>
 
-            <!-- Social Media Section -->
             <div v-if="user.socialMedia" class="social-section">
               <div class="section-header">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -152,7 +215,6 @@
             </div>
           </div>
 
-          <!-- Swipe indicators -->
           <div class="swipe-overlay swipe-left-overlay" :style="{ opacity: leftSwipeOpacity }">
             <div class="swipe-indicator">NOPE</div>
           </div>
@@ -163,7 +225,6 @@
       </div>
     </div>
 
-    <!-- Buttons -->
     <div class="action-buttons">
       <button class="action-button reject" @click="swipeLeft()">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none"
@@ -182,11 +243,11 @@
       </button>
     </div>
 
-    <!-- Empty state -->
     <div class="empty-state" v-if="filteredUsers.length === 0">
       <div class="empty-icon">💔</div>
       <h2>No more profiles</h2>
       <p>You've seen all available matches</p>
+      <button class="go-to-dashboard" @click="navigateToDashboard">Return to Dashboard</button>
     </div>
   </div>
 </template>
@@ -198,12 +259,8 @@ export default {
     return {
       visibleUsers: [],
       activeCardIndex: 0,
-      dragStartX: 0,
-      dragStartY: 0,
       dragOffsetX: 0,
       dragOffsetY: 0,
-      isDragging: false,
-      swipeThreshold: 120,
       leftSwipeOpacity: 0,
       rightSwipeOpacity: 0,
       isLoading: true,
@@ -216,9 +273,9 @@ export default {
     }
   },
   methods: {
+    // In the fetchAllUsers method, ensure currentlyPlaying is properly processed:
     async fetchAllUsers() {
       try {
-        this.isLoading = true;
         const res = await fetch('http://localhost:5000/api/users/all', {
           credentials: 'include'
         });
@@ -229,67 +286,106 @@ export default {
 
         const data = await res.json();
 
-        // Validate and transform data
         if (!data || !Array.isArray(data.users)) {
           console.warn('Received invalid user data:', data);
           this.visibleUsers = [];
           return;
         }
 
-        // Add UI state properties to each user and ensure data integrity
-        this.visibleUsers = data.users.map(user => {
-          // Make sure user is an object
-          if (!user || typeof user !== 'object') {
-            return null;
-          }
+        const newUserData = data.users;
 
-          return {
-            id: user.id || `temp-${Math.random().toString(36).substring(2, 11)}`,
-            name: user.name || 'Unknown User',
-            age: user.age || null,
-            bio: user.bio || '',
-            bioExpanded: false,
-            location: user.location || null,
-            profileImage: user.profileImage || null,
-            compatibility: user.compatibility || 0,
-            sharedGenres: Array.isArray(user.sharedGenres) ? user.sharedGenres : [],
-            favoriteGenres: Array.isArray(user.favoriteGenres) ? user.favoriteGenres : [],
-            favoriteArtists: Array.isArray(user.favoriteArtists) ?
-              user.favoriteArtists.map(artist => {
-                if (!artist || typeof artist !== 'object') return { name: 'Unknown', image: null };
-                return {
-                  name: artist.name || 'Unknown Artist',
-                  image: artist.image || null
-                };
-              }) : [],
-            topTracks: Array.isArray(user.topTracks) ?
-              user.topTracks.map(track => {
-                if (!track || typeof track !== 'object') return { title: 'Unknown', artist: 'Unknown' };
-                return {
-                  title: track.title || 'Unknown Track',
-                  artist: track.artist || 'Unknown Artist'
-                };
-              }) : [],
-            socialMedia: user.socialMedia || null
-          };
-        }).filter(Boolean); // Remove null users
+        if (this.visibleUsers.length === 0) {
+          // Initial full setup
+          this.visibleUsers = newUserData.map(user => {
+            if (!user || typeof user !== 'object') return null;
+
+            return {
+              id: user.id || `temp-${Math.random().toString(36).substring(2, 11)}`,
+              name: user.name || 'Unknown User',
+              age: user.age || null,
+              bio: user.bio || '',
+              bioExpanded: false,
+              location: user.location || null,
+              profileImage: user.profileImage || null,
+              compatibility: user.compatibility || 0,
+              sharedGenres: Array.isArray(user.sharedGenres) ? user.sharedGenres : [],
+              sharedArtists: Array.isArray(user.sharedArtists) ? user.sharedArtists : [],
+              favoriteGenres: Array.isArray(user.favoriteGenres) ? user.favoriteGenres : [],
+              favoriteArtists: user.favoriteArtists || '',
+              topTracks: Array.isArray(user.topTracks) ?
+                user.topTracks.map(track => {
+                  if (!track || typeof track !== 'object') return { title: 'Unknown', artist: 'Unknown' };
+                  return {
+                    title: track.title || 'Unknown Track',
+                    artist: track.artist || 'Unknown Artist'
+                  };
+                }) : [],
+              socialMedia: user.socialMedia || null,
+              currentlyPlaying: user.currentlyPlaying ? {
+                title: user.currentlyPlaying.title || 'Unknown Track',
+                artist: user.currentlyPlaying.artist || 'Unknown Artist',
+                uri: user.currentlyPlaying.uri || null
+              } : null
+            };
+          }).filter(Boolean);
+
+        } else {
+          // Just update `currentlyPlaying`
+          newUserData.forEach(newUser => {
+            const existing = this.visibleUsers.find(u => u.id === newUser.id);
+            if (existing && newUser.currentlyPlaying) {
+              existing.currentlyPlaying = {
+                title: newUser.currentlyPlaying.title || 'Unknown Track',
+                artist: newUser.currentlyPlaying.artist || 'Unknown Artist',
+                uri: newUser.currentlyPlaying.uri || null
+              };
+            }
+          });
+        }
+
       } catch (err) {
         console.error('❌ Failed to fetch users:', err.message);
         this.error = err.message;
-      } finally {
-        this.isLoading = false;
       }
+    },
+   
+    async playSpotifyTrack(uri) {
+      if (!uri) return;
+      try {
+        await fetch('https://api.spotify.com/v1/me/player/play', {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${this.$root.spotifyAccessToken}`, // You'll need to inject/store this properly
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ uris: [uri] }),
+        });
+        console.log('Track started!');
+      } catch (err) {
+        console.error('Failed to play track:', err);
+      }
+    },
+
+    parseArtists(artistsString) {
+      if (!artistsString || typeof artistsString !== 'string') return [];
+      return artistsString.split(',').map(artist => artist.trim()).filter(Boolean);
+    },
+
+    parseSharedArtists(sharedArtistsArray) {
+      if (!Array.isArray(sharedArtistsArray)) return [];
+      return sharedArtistsArray;
     },
 
     getFullImageUrl(path) {
       if (!path) return 'https://via.placeholder.com/400x500?text=No+Image';
-
-      // Handle absolute URLs
       if (path.startsWith('http://') || path.startsWith('https://')) {
         return path;
       }
-
       return `http://localhost:5000${path}`;
+    },
+
+    navigateToDashboard() {
+      this.$router.push('/dashboard');
     },
 
     toggleBio(user) {
@@ -300,7 +396,6 @@ export default {
 
     getCardStyle(index) {
       if (index !== this.activeCardIndex) {
-        // Style for cards underneath
         const zIndex = this.filteredUsers.length - index;
         return {
           transform: `translateY(${index * 4}px) scale(${1 - (index * 0.05)})`,
@@ -309,88 +404,20 @@ export default {
         };
       }
 
-      // Style for active card
-      const rotation = this.dragOffsetX * 0.1;
-      const scale = Math.max(1, 1 + Math.abs(this.dragOffsetX) * 0.001);
-
       return {
-        transform: `translate(${this.dragOffsetX}px, ${this.dragOffsetY}px) rotate(${rotation}deg) scale(${scale})`,
+        transform: `translate(${this.dragOffsetX}px, ${this.dragOffsetY}px)`,
         zIndex: this.filteredUsers.length + 1
       };
-    },
-
-    startDrag(event, index) {
-      if (index !== this.activeCardIndex) return;
-
-      this.isDragging = true;
-      if (event.type.includes('mouse')) {
-        this.dragStartX = event.clientX;
-        this.dragStartY = event.clientY;
-      } else if (event.touches && event.touches[0]) {
-        this.dragStartX = event.touches[0].clientX;
-        this.dragStartY = event.touches[0].clientY;
-      }
-
-      this.dragOffsetX = 0;
-      this.dragOffsetY = 0;
-    },
-
-    onDrag(event) {
-      if (!this.isDragging) return;
-
-      let currentX, currentY;
-      if (event.type.includes('mouse')) {
-        currentX = event.clientX;
-        currentY = event.clientY;
-      } else if (event.touches && event.touches[0]) {
-        currentX = event.touches[0].clientX;
-        currentY = event.touches[0].clientY;
-      } else {
-        return; // Skip if we can't get coordinates
-      }
-
-      this.dragOffsetX = currentX - this.dragStartX;
-      this.dragOffsetY = currentY - this.dragStartY;
-
-      // Calculate swipe indicator opacity
-      const maxOpacity = 1;
-      if (this.dragOffsetX > 0) {
-        this.rightSwipeOpacity = Math.min(maxOpacity, this.dragOffsetX / this.swipeThreshold);
-        this.leftSwipeOpacity = 0;
-      } else {
-        this.leftSwipeOpacity = Math.min(maxOpacity, Math.abs(this.dragOffsetX) / this.swipeThreshold);
-        this.rightSwipeOpacity = 0;
-      }
-    },
-
-    endDrag() {
-      if (!this.isDragging) return;
-      this.isDragging = false;
-
-      if (this.dragOffsetX > this.swipeThreshold) {
-        this.swipeRight();
-      } else if (this.dragOffsetX < -this.swipeThreshold) {
-        this.swipeLeft();
-      } else {
-        // Reset position if not swiped far enough
-        this.dragOffsetX = 0;
-        this.dragOffsetY = 0;
-        this.leftSwipeOpacity = 0;
-        this.rightSwipeOpacity = 0;
-      }
     },
 
     swipeLeft() {
       if (this.filteredUsers.length === 0) return;
 
-      // Mark the card as swiped left
       if (this.visibleUsers[this.activeCardIndex]) {
         this.visibleUsers[this.activeCardIndex].direction = 'left';
 
-        // Remove card after animation completes
         setTimeout(() => {
           this.visibleUsers.splice(this.activeCardIndex, 1);
-          // Reset swipe indicators
           this.dragOffsetX = 0;
           this.dragOffsetY = 0;
           this.leftSwipeOpacity = 0;
@@ -402,17 +429,12 @@ export default {
     swipeRight() {
       if (this.filteredUsers.length === 0) return;
 
-      // Mark the card as swiped right
       if (this.visibleUsers[this.activeCardIndex]) {
         this.visibleUsers[this.activeCardIndex].direction = 'right';
-
-        // Send match data to backend
         this.sendMatchToBackend(this.filteredUsers[this.activeCardIndex].id);
 
-        // Remove card after animation completes
         setTimeout(() => {
           this.visibleUsers.splice(this.activeCardIndex, 1);
-          // Reset swipe indicators
           this.dragOffsetX = 0;
           this.dragOffsetY = 0;
           this.leftSwipeOpacity = 0;
@@ -444,9 +466,16 @@ export default {
   },
   mounted() {
     this.fetchAllUsers();
-  }
+    this.pollingInterval = setInterval(this.fetchAllUsers, 5000);
+  },
+
+  beforeUnmount() {
+    clearInterval(this.pollingInterval);
+  },
 }
+
 </script>
+
 <style>
 * {
   box-sizing: border-box;
@@ -468,6 +497,33 @@ body {
   height: 100vh;
   overflow: hidden;
   padding: 0 20px;
+  position: relative;
+}
+
+.back-button {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #6d28d9;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  z-index: 1000;
+}
+
+.back-button:hover {
+  background-color: #6d28d9;
+  color: white;
+  transform: translateY(-2px);
 }
 
 .card-stack {
@@ -476,6 +532,7 @@ body {
   max-width: 380px;
   height: 650px;
   margin-bottom: 20px;
+  margin-top: 60px;
 }
 
 .swipe-card {
@@ -483,13 +540,11 @@ body {
   width: 100%;
   height: 100%;
   transition: transform 0.3s ease, opacity 0.2s ease;
-  cursor: grab;
-  perspective: 1000px;
   will-change: transform;
 }
 
 .swipe-card.active {
-  cursor: grabbing;
+  z-index: 10;
 }
 
 .card-inner {
@@ -507,7 +562,7 @@ body {
 
 .card-image {
   width: 100%;
-  height: 55%;
+  height: 40%;
   background-size: cover;
   background-position: center;
   position: relative;
@@ -603,140 +658,158 @@ body {
   transform: rotate(180deg);
 }
 
+.music-match-section {
+  background-color: #f7f2ff;
+  padding: 12px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+
+.music-match-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.music-match-header h3 {
+  flex: 1;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #6d28d9;
+}
+
+.match-percentage {
+  font-weight: 700;
+  font-size: 18px;
+  color: #6d28d9;
+}
+
+.music-section {
+  background-color: #f9f9f9;
+  padding: 12px;
+  border-radius: 12px;
+  margin-bottom: 4px;
+}
+
 .section-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .section-header h3 {
-  font-size: 15px;
-  font-weight: 600;
-  color: #333;
   margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #444;
 }
 
 .section-header svg {
   color: #6d28d9;
 }
 
-.music-section {
-  margin-bottom: 10px;
+.artists-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.artist-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: white;
+  padding: 6px 10px;
+  border-radius: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.artist-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: #6d28d9;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.artist-name {
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .genres-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  margin-top: 8px;
 }
 
 .genre-chip {
-  display: inline-block;
-  background-color: #edf2f7;
-  color: #4a5568;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.genre-chip:hover {
-  background-color: #e2e8f0;
-}
-
-.artists-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.artist-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: calc(33.333% - 8px);
-}
-
-.artist-avatar {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background-color: #ddd;
-  background-size: cover;
-  background-position: center;
-  margin-bottom: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  font-weight: 600;
-  color: #555;
-}
-
-.artist-name {
+  background-color: white;
+  color: #6d28d9;
+  padding: 4px 12px;
+  border-radius: 16px;
   font-size: 12px;
   font-weight: 500;
-  text-align: center;
-  color: #444;
-  max-width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .tracks-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .track-item {
   display: flex;
   align-items: center;
+  gap: 10px;
+  background-color: white;
   padding: 8px 12px;
-  background-color: #f7f9fc;
   border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .track-number {
   width: 24px;
   height: 24px;
+  border-radius: 50%;
+  background-color: #f0ebfa;
+  color: #6d28d9;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
   font-size: 12px;
-  color: #6d28d9;
-  margin-right: 10px;
+  font-weight: 600;
 }
 
 .track-info {
   flex: 1;
-  overflow: hidden;
 }
 
 .track-title {
-  font-weight: 600;
   font-size: 13px;
+  font-weight: 600;
   color: #333;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .track-artist {
-  font-size: 12px;
+  font-size: 11px;
   color: #666;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .play-button {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background-color: #6d28d9;
   color: white;
@@ -745,92 +818,111 @@ body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.play-button:hover {
-  background-color: #5b21b6;
-  transform: scale(1.05);
 }
 
 .social-section {
-  margin-top: 4px;
+  padding: 12px;
+  border-radius: 12px;
+  background-color: #f0f7ff;
+  margin-bottom: 4px;
 }
 
 .social-links {
   display: flex;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .social-link {
-  display: inline-flex;
-  align-items: center;
   padding: 6px 12px;
-  border-radius: 12px;
-  font-size: 13px;
+  border-radius: 16px;
+  font-size: 12px;
   font-weight: 500;
   text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   transition: all 0.2s ease;
 }
 
 .social-link.instagram {
-  background-color: #fcecf3;
-  color: #e1306c;
+  background-color: #e1306c;
+  color: white;
 }
 
 .social-link.spotify {
-  background-color: #ebf8ed;
-  color: #1DB954;
+  background-color: #1DB954;
+  color: white;
+}
+
+.social-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+.swipe-card.swipe-left {
+  transform: translateX(-150%) rotate(-20deg) !important;
+  opacity: 0;
+}
+
+.swipe-card.swipe-right {
+  transform: translateX(150%) rotate(20deg) !important;
+  opacity: 0;
 }
 
 .swipe-overlay {
   position: absolute;
   top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 24px;
   pointer-events: none;
-  opacity: 0;
   transition: opacity 0.2s ease;
 }
 
 .swipe-left-overlay {
-  background-color: rgba(239, 68, 68, 0.15);
-  left: 0;
+  background-color: rgba(255, 92, 92, 0.2);
+  border: 3px solid #ff5c5c;
 }
 
 .swipe-right-overlay {
-  background-color: rgba(16, 185, 129, 0.15);
-  right: 0;
+  background-color: rgba(71, 189, 105, 0.2);
+  border: 3px solid #47bd69;
 }
 
 .swipe-indicator {
+  font-size: 32px;
+  font-weight: 800;
   padding: 10px 20px;
   border-radius: 8px;
-  font-weight: 700;
-  font-size: 28px;
   transform: rotate(-20deg);
-  border: 4px solid;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
 .swipe-left-overlay .swipe-indicator {
-  color: #ef4444;
-  border-color: #ef4444;
+  background-color: #ff5c5c;
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.6);
 }
 
 .swipe-right-overlay .swipe-indicator {
-  color: #10b981;
-  border-color: #10b981;
+  background-color: #47bd69;
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.6);
 }
 
 .action-buttons {
   display: flex;
   justify-content: center;
-  gap: 40px;
+  gap: 20px;
   margin-top: 20px;
+  z-index: 100;
 }
 
 .action-button {
@@ -842,77 +934,125 @@ body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
   transition: all 0.2s ease;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
 }
 
 .action-button:hover {
-  transform: scale(1.1);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
-.reject {
+.action-button.reject {
   background-color: white;
-  color: #ef4444;
-  border: 2px solid #ef4444;
 }
 
-.reject:hover {
-  background-color: #ef4444;
+.action-button.reject svg {
+  color: #ff5c5c;
+  width: 28px;
+  height: 28px;
+}
+
+.action-button.like {
+  background-color: #6d28d9;
+}
+
+.action-button.like svg {
   color: white;
-}
-
-.like {
-  background-color: white;
-  color: #10b981;
-  border: 2px solid #10b981;
-}
-
-.like:hover {
-  background-color: #10b981;
-  color: white;
-}
-
-.swipe-card.swipe-left {
-  transform: translateX(-150%) rotate(-30deg) !important;
-  opacity: 0 !important;
-  transition: transform 0.3s ease, opacity 0.2s ease;
-}
-
-.swipe-card.swipe-right {
-  transform: translateX(150%) rotate(30deg) !important;
-  opacity: 0 !important;
-  transition: transform 0.3s ease, opacity 0.2s ease;
+  width: 28px;
+  height: 28px;
 }
 
 .empty-state {
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
   padding: 40px;
-  color: #666;
+  text-align: center;
 }
 
 .empty-icon {
   font-size: 60px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .empty-state h2 {
   font-size: 28px;
-  margin-bottom: 12px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: #333;
 }
 
 .empty-state p {
   font-size: 16px;
-  color: #888;
+  color: #666;
+  margin-bottom: 24px;
 }
 
-@media (max-width: 480px) {
-  .card-stack {
-    height: 580px;
+.go-to-dashboard {
+  background-color: #6d28d9;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 24px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.go-to-dashboard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(109, 40, 217, 0.3);
+}
+
+/* Loading states */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 40px;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #6d28d9;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+.error-container {
+  background-color: #ffe5e5;
+  padding: 20px;
+  border-radius: 12px;
+  margin: 20px;
+  border: 1px solid #ff8080;
+  color: #cc0000;
+  text-align: center;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
   }
 
-  .action-button {
-    width: 56px;
-    height: 56px;
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+  .card-stack {
+    max-width: 340px;
+    height: 600px;
   }
 
   .user-name {
@@ -922,53 +1062,207 @@ body {
   .user-age {
     font-size: 20px;
   }
+
+  .action-button {
+    width: 56px;
+    height: 56px;
+  }
+}
+
+@media (max-width: 480px) {
+  .card-stack {
+    max-width: 300px;
+    height: 550px;
+    margin-top: 40px;
+  }
+
+  .back-button {
+    top: 12px;
+    left: 12px;
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .card-image {
+    height: 35%;
+  }
+
+  .card-content {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .user-name {
+    font-size: 22px;
+  }
+
+  .user-age {
+    font-size: 18px;
+  }
+
+  .music-section,
+  .music-match-section {
+    padding: 10px;
+  }
+
+  .action-button {
+    width: 50px;
+    height: 50px;
+  }
+
+  .action-button svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .swipe-indicator {
+    font-size: 28px;
+    padding: 8px 16px;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.card-inner {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.music-section {
+  animation: slideUp 0.3s ease-out;
 }
 
 /* Scrollbar styling */
 .card-content::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
 }
 
 .card-content::-webkit-scrollbar-track {
   background: #f1f1f1;
+  border-radius: 10px;
 }
 
 .card-content::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 4px;
+  background: #ddd;
+  border-radius: 10px;
 }
 
 .card-content::-webkit-scrollbar-thumb:hover {
-  background: #a1a1aa;
+  background: #ccc;
 }
 
-/* Additional animation effects */
-.action-button svg {
-  transition: transform 0.2s ease;
-}
-
-.action-button:hover svg {
-  transform: scale(1.2);
-}
-
-/* Add focus states for accessibility */
+/* Accessibility improvements */
 .action-button:focus,
+.back-button:focus,
 .expand-button:focus,
-.play-button:focus {
+.play-button:focus,
+.social-link:focus,
+.go-to-dashboard:focus {
   outline: 2px solid #6d28d9;
   outline-offset: 2px;
 }
 
-/* Add touch device optimizations */
+/* Touch device improvements */
 @media (hover: none) {
   .action-button {
-    width: 70px;
-    height: 70px;
+    transition: transform 0.1s ease;
   }
 
-  .swipe-indicator {
-    font-size: 36px;
-    padding: 12px 24px;
+  .action-button:active {
+    transform: scale(0.95);
+  }
+}
+/* Currently Playing Section */
+.currently-playing {
+  background-color: #f0fff4;
+  border-left: 3px solid #10b981;
+}
+
+.current-track {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: white;
+  padding: 12px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-top: 8px;
+}
+
+.playing-animation {
+  display: flex;
+  align-items: flex-end;
+  height: 24px;
+  gap: 2px;
+}
+
+.playing-animation span {
+  display: block;
+  width: 3px;
+  background-color: #10b981;
+  border-radius: 3px;
+  animation: soundBars 1.5s infinite ease-in-out;
+}
+
+.playing-animation span:nth-child(1) {
+  height: 8px;
+  animation-delay: 0.2s;
+}
+
+.playing-animation span:nth-child(2) {
+  height: 16px;
+  animation-delay: 0.6s;
+}
+
+.playing-animation span:nth-child(3) {
+  height: 12px;
+  animation-delay: 0.3s;
+}
+
+.current-track-info {
+  flex: 1;
+}
+
+.current-track-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.current-track-artist {
+  font-size: 12px;
+  color: #666;
+}
+
+@keyframes soundBars {
+
+  0%,
+  100% {
+    height: 6px;
+  }
+
+  50% {
+    height: 18px;
   }
 }
 </style>

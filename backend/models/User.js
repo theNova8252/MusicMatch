@@ -8,6 +8,9 @@ User.init(
     name: DataTypes.STRING,
     email: { type: DataTypes.STRING, unique: true },
     spotifyToken: DataTypes.STRING(2048),
+    spotifyRefreshToken: {
+      type: DataTypes.STRING,
+    },
     googleToken: DataTypes.STRING(2048),
     profileImage: DataTypes.STRING,
     artists: DataTypes.JSONB,
@@ -21,7 +24,11 @@ User.init(
       allowNull: true,
     },
     favoriteGenres: {
-      type: DataTypes.STRING, 
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    bio: {
+      type: DataTypes.TEXT,
       allowNull: true,
     },
   },

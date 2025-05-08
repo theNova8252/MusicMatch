@@ -51,4 +51,5 @@ router.post('/remove-artist', authMiddleware, removeCustomArtist);
 router.get('/refresh-spotify-data', refreshSpotifyData);
 router.post('/save-user-details', saveUserDetails);
 
+
 export default router;

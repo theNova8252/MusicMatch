@@ -2,6 +2,8 @@ import express from 'express';
 import authMiddleware from '../middleware/authMiddleware.js';
 import User from '../models/User.js';
 import { Op } from 'sequelize';
+import axios from 'axios';
+import { getFreshSpotifyToken } from '../utils/spotify.js';
 
 const router = express.Router();
 
@@ -9,6 +11,10 @@ router.get('/all', authMiddleware, async (req, res) => {
   try {
     const currentUserId = req.session.user?.id || req.session.userId;
     const currentUser = await User.findByPk(currentUserId);
+
+    if (!currentUser) {
+      return res.status(404).json({ message: 'Current user not found.' });
+    }
 
     const currentArtists = (currentUser.favoriteArtists || '')
       .split(',')
@@ -20,51 +26,116 @@ router.get('/all', authMiddleware, async (req, res) => {
       .map((g) => g.trim().toLowerCase())
       .filter(Boolean);
 
-    const users = await User.findAll({
+    const otherUsers = await User.findAll({
       where: {
         id: { [Op.ne]: currentUserId },
       },
-      attributes: ['id', 'name', 'email', 'profileImage', 'favoriteArtists', 'favoriteGenres'],
+      attributes: [
+        'id',
+        'name',
+        'email',
+        'profileImage',
+        'favoriteArtists',
+        'favoriteGenres',
+        'spotifyToken',
+        'spotifyRefreshToken',
+        'bio',
+        'dateOfBirth',
+      ],
     });
 
-    const enriched = users.map((user) => {
-      const theirArtists = (user.favoriteArtists || '')
-        .split(',')
-        .map((a) => a.trim().toLowerCase())
-        .filter(Boolean);
+    const enrichedUsers = await Promise.all(
+      otherUsers.map(async (user) => {
+        const rawUser = user.toJSON(); // ← FIXED: get actual values from Sequelize instance
 
-      const theirGenres = (user.favoriteGenres || '')
-        .split(',')
-        .map((g) => g.trim().toLowerCase())
-        .filter(Boolean);
+        const theirArtists = (rawUser.favoriteArtists || '')
+          .split(',')
+          .map((a) => a.trim().toLowerCase())
+          .filter(Boolean);
 
-      const sharedArtists = currentArtists.filter((a) => theirArtists.includes(a));
-      const sharedGenres = currentGenres.filter((g) => theirGenres.includes(g));
+        const theirGenres = (rawUser.favoriteGenres || '')
+          .split(',')
+          .map((g) => g.trim().toLowerCase())
+          .filter(Boolean);
 
-      const totalUnique = new Set([
-        ...currentArtists,
-        ...theirArtists,
-        ...currentGenres,
-        ...theirGenres,
-      ]).size;
+        const sharedArtists = currentArtists.filter((a) => theirArtists.includes(a));
+        const sharedGenres = currentGenres.filter((g) => theirGenres.includes(g));
 
-      const sharedTotal = sharedArtists.length + sharedGenres.length;
+        const totalUnique = new Set([
+          ...currentArtists,
+          ...theirArtists,
+          ...currentGenres,
+          ...theirGenres,
+        ]).size;
 
-      const compatibility = totalUnique === 0 ? 0 : Math.round((sharedTotal / totalUnique) * 100);
+        const sharedTotal = sharedArtists.length + sharedGenres.length;
+        const compatibility = totalUnique === 0 ? 0 : Math.round((sharedTotal / totalUnique) * 100);
 
-      return {
-        ...user.toJSON(),
-        compatibility,
-        sharedArtists,
-        sharedGenres,
-        favoriteGenres: theirGenres,
-      };
-    });
+        let topTracks = [];
+        let currentlyPlaying = null;
 
-    res.json({ users: enriched });
+        if (rawUser.spotifyToken && rawUser.spotifyRefreshToken) {
+          try {
+            const freshToken = await getFreshSpotifyToken(rawUser.spotifyRefreshToken);
+
+            if (!freshToken) throw new Error('No fresh token returned');
+
+            const headers = {
+              Authorization: `Bearer ${freshToken}`,
+            };
+
+            const topRes = await axios.get('https://api.spotify.com/v1/me/top/tracks?limit=5', {
+              headers,
+            });
+
+            topTracks = topRes.data.items.map((track) => ({
+              title: track.name,
+              artist: track.artists[0]?.name || 'Unknown Artist',
+              uri: track.uri,
+            }));
+
+            const playingRes = await axios.get(
+              'https://api.spotify.com/v1/me/player/currently-playing',
+              { headers },
+            );
+
+            if (playingRes.status === 200 && playingRes.data?.item) {
+              currentlyPlaying = {
+                title: playingRes.data.item.name,
+                artist: playingRes.data.item.artists[0]?.name || 'Unknown Artist',
+                uri: playingRes.data.item.uri,
+              };
+            }
+          } catch (err) {
+            console.warn(
+              `⚠️ Spotify fetch failed for user ${rawUser.id}:`,
+              err.response?.data || err.message,
+            );
+          }
+        }
+
+        return {
+          ...rawUser,
+          compatibility,
+          sharedArtists,
+          sharedGenres,
+          favoriteGenres: theirGenres,
+          favoriteArtists: rawUser.favoriteArtists,
+          topTracks,
+          currentlyPlaying,
+          age: rawUser.dateOfBirth
+            ? Math.floor(
+                (new Date() - new Date(rawUser.dateOfBirth)) / (365.25 * 24 * 60 * 60 * 1000),
+              )
+            : null,
+        };
+      }),
+    );
+
+    res.json({ users: enrichedUsers });
   } catch (err) {
-    console.error('💥 Error in /all:', err.message);
-    res.status(500).json({ error: 'Something went wrong' });
+    console.error('💥 Error in /users/all:', err.message);
+    res.status(500).json({ error: 'Something went wrong.' });
   }
 });
 
