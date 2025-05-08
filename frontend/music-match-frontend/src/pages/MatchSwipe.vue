@@ -88,6 +88,45 @@
                 </button>
               </div>
             </div>
+            <div v-if="user.recentlyPlayed && user.recentlyPlayed.length" class="music-section recently-played">
+              <div class="section-header">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="17 1 21 5 17 9"></polyline>
+                  <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                  <polyline points="7 23 3 19 7 15"></polyline>
+                  <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+                </svg>
+                <h3>Recently Played</h3>
+              </div>
+              <div class="recent-tracks-list">
+                <div v-for="(track, i) in user.recentlyPlayed.slice(0, 3)" :key="'recent-' + i" class="track-item">
+                  <div class="track-item">
+                    <img v-if="track.albumImage" :src="track.albumImage" alt="Album Cover" class="album-cover" />
+                    <div class="track-meta">
+                      <div class="track-timing">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        <span>{{ formatTimeSince(track.playedAt) }}</span>
+                      </div>
+                      <div class="track-info">
+                        <div class="track-title">{{ track.title || 'Unknown Track' }}</div>
+                        <div class="track-artist">{{ track.artist || 'Unknown Artist' }}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- <button class="play-button" @click="playSpotifyTrack(track.uri)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                  </button> -->
+                </div>
+              </div>
+            </div>
 
             <div v-if="user.sharedArtists && user.sharedArtists.length" class="music-section">
               <div class="section-header">
@@ -182,12 +221,12 @@
                     <div class="track-title">{{ track && track.title ? track.title : 'Unknown Track' }}</div>
                     <div class="track-artist">{{ track && track.artist ? track.artist : 'Unknown Artist' }}</div>
                   </div>
-                  <button class="play-button" @click="playSpotifyTrack(user.currentlyPlaying?.uri)">
+                  <!-- <button class="play-button" @click="playSpotifyTrack(user.currentlyPlaying?.uri)">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                      <polygon points="5 3 19 12 5 21 5 3"></polygon> 
                     </svg>
-                  </button>
+                  </button> -->
                 </div>
               </div>
             </div>
@@ -249,7 +288,8 @@
       <p>You've seen all available matches</p>
       <button class="go-to-dashboard" @click="navigateToDashboard">Return to Dashboard</button>
     </div>
-    <MatchPopup :visible="showMatchPopup" :matchedUser="matchedUser" :currentUser="currentUser" @close="closePopup" />
+    <MatchPopup :visible="showMatchPopup" :matchedUser="matchedUser" :currentUser="currentUser"
+      :sharedMusic="sharedMusic" @close="showMatchPopup = false" />
   </div>
 </template>
 
@@ -272,7 +312,8 @@ export default {
       error: null,
       showMatchPopup: false,
       matchedUser: null,
-      seenUserIds: new Set()
+      seenUserIds: new Set(),
+      sharedMusic: { artists: [], genres: [] },
 
     } 
   },
@@ -281,7 +322,14 @@ export default {
       return this.visibleUsers.filter(user => user);
     },
     currentUser() {
-      return this.$store.state.user || {};
+      const user = this.$store.state.user || {};
+      if (!user.profileImage) return user;
+
+      const isFullUrl = user.profileImage.startsWith('http://') || user.profileImage.startsWith('https://');
+      return {
+        ...user,
+        profileImage: isFullUrl ? user.profileImage : `${window.location.origin}${user.profileImage}`
+      };
     }
   },
   methods: {
@@ -339,7 +387,22 @@ export default {
                 title: user.currentlyPlaying.title || 'Unknown Track',
                 artist: user.currentlyPlaying.artist || 'Unknown Artist',
                 uri: user.currentlyPlaying.uri || null
-              } : null
+              } : null,
+              recentlyPlayed: Array.isArray(user.recentlyPlayed) ?
+                user.recentlyPlayed.map(track => {
+                  if (!track || typeof track !== 'object') return {
+                    title: 'Unknown',
+                    artist: 'Unknown',
+                    playedAt: null
+                  };
+                  return {
+                    title: track.title || 'Unknown Track',
+                    artist: track.artist || 'Unknown Artist',
+                    playedAt: track.playedAt || null,
+                    uri: track.uri || null,
+                    albumImage: track.albumImage || null
+                  };
+                }) : [],
             };
           }).filter(Boolean);
 
@@ -378,6 +441,30 @@ export default {
       } catch (err) {
         console.error('Failed to play track:', err);
       }
+    },
+    formatTimeSince(timestamp) {
+      if (!timestamp) return 'Recently';
+
+      const now = new Date();
+      const playedTime = new Date(timestamp);
+      const diffMs = now - playedTime;
+
+      // Convert to minutes
+      const diffMins = Math.floor(diffMs / 60000);
+
+      if (diffMins < 60) {
+        return diffMins === 1 ? '1 min ago' : `${diffMins} mins ago`;
+      }
+
+      // Convert to hours
+      const diffHours = Math.floor(diffMins / 60);
+      if (diffHours < 24) {
+        return diffHours === 1 ? '1 hr ago' : `${diffHours} hrs ago`;
+      }
+
+      // Convert to days
+      const diffDays = Math.floor(diffHours / 24);
+      return diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
     },
 
 
@@ -475,8 +562,9 @@ export default {
         }
         const data = await res.json();
         if (data.mutualMatch) {
-          // Replace the alert with this:
-          this.matchedUser = this.filteredUsers[this.activeCardIndex];
+          const matched = this.filteredUsers[this.activeCardIndex];
+          this.matchedUser = matched;
+          this.sharedMusic = this.getSharedMusic(this.currentUser, matched);
           this.showMatchPopup = true;
         }
       } catch (err) {
@@ -484,6 +572,18 @@ export default {
       }
     }
   },
+  getSharedMusic(currentUser, matchedUser) {
+    const sharedArtists = currentUser.favoriteArtists?.filter(artist =>
+      matchedUser.favoriteArtists?.includes(artist)
+    ) || [];
+
+    const sharedGenres = currentUser.favoriteGenres?.filter(genre =>
+      matchedUser.favoriteGenres?.includes(genre)
+    ) || [];
+
+    return { artists: sharedArtists, genres: sharedGenres };
+  },
+
   closeMatchPopup() {
     this.showMatchPopup = false;
     this.matchedUser = null;
@@ -726,7 +826,13 @@ body {
   font-size: 18px;
   color: #6d28d9;
 }
-
+.album-cover {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  object-fit: cover;
+  margin-right: 10px;
+}
 .music-section {
   background-color: #f9f9f9;
   padding: 12px;
@@ -814,39 +920,47 @@ body {
 .track-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  padding: 12px;
   background-color: white;
-  padding: 8px 12px;
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.track-number {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background-color: #f0ebfa;
-  color: #6d28d9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 600;
+.album-cover {
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
 }
 
-.track-info {
+.track-meta {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   flex: 1;
 }
 
+.track-timing {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
 .track-title {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  color: #333;
+  color: #111;
+  line-height: 1.2;
 }
 
 .track-artist {
-  font-size: 11px;
-  color: #666;
+  font-size: 13px;
+  color: #555;
 }
 
 .play-button {
@@ -1306,5 +1420,25 @@ body {
   50% {
     height: 18px;
   }
+}
+.recently-played {
+  background-color: #f5f0ff;
+  border-left: 3px solid #8b5cf6;
+}
+
+.recent-tracks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.track-timing {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #6b7280;
+  min-width: 80px;
 }
 </style>

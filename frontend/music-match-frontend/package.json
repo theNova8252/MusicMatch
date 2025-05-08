@@ -17,7 +17,9 @@
   "dependencies": {
     "@quasar/extras": "^1.16.17",
     "axios": "^1.7.9",
+    "pinia": "^3.0.2",
     "quasar": "^2.16.0",
+    "socket.io-client": "^4.8.1",
     "vue": "^3.4.18",
     "vue-router": "^4.0.0",
     "vue3-touch-events": "^5.0.13"

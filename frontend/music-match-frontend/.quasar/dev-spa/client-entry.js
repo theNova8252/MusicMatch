@@ -148,7 +148,9 @@ createQuasarApp(createApp, quasarUserOptions)
       
       import('boot/touch-events'),
       
-      import('boot/vuex')
+      import('boot/vuex'),
+      
+      import('boot/pinia')
       
     ]).then(bootFiles => {
       const boot = mapFn(bootFiles).filter(entry => typeof entry === 'function')

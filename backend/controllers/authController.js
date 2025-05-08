@@ -476,6 +476,7 @@ export const getUserProfile = async (req, res) => {
             headers: { Authorization: `Bearer ${token}` },
           },
         );
+        
 
         try {
           const currentPlaybackResponse = await axios.get(

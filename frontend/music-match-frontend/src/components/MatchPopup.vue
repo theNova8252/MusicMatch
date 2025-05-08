@@ -1,4 +1,4 @@
-<!-- Add this as a new component: MatchPopup.vue --><template>
+<template>
   <transition name="match-popup">
     <div v-if="visible" class="match-popup-overlay" @click="handleBackgroundClick">
       <div class="match-popup-container" @click.stop>
@@ -38,10 +38,10 @@
 
           <div class="profile">
             <div class="profile-image"
-              :style="{ backgroundImage: `url(${getFullImageUrl(matchedUser?.profileImage)})` }">
+              :style="{ backgroundImage: matchedUser ? `url(${getFullImageUrl(matchedUser.profileImage)})` : '' }">
               <div class="profile-circle"></div>
             </div>
-            <p class="profile-name">{{ matchedUser?.name || 'Match' }}</p>
+            <p class="profile-name">{{ matchedUser ? matchedUser.name : 'Match' }}</p>
           </div>
         </div>
 
@@ -53,35 +53,35 @@
         </div>
 
         <div class="match-message">
-          <p>You and {{ matchedUser?.name || 'your match' }} liked each other!</p>
+          <p>You and {{ matchedUser ? matchedUser.name : 'your match' }} liked each other!</p>
         </div>
 
-        <div class="shared-music"
-          v-if="matchedUser && (matchedUser.sharedArtists?.length || matchedUser.sharedGenres?.length)">
+        <div class="shared-music" v-if="hasSharedMusicContent">
           <h3>Your Shared Music Taste</h3>
 
-          <div v-if="matchedUser.sharedArtists?.length" class="music-section">
+          <div v-if="hasSharedArtists" class="music-section">
             <h4>
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                <line x1="12" y1="19" x2="12" y2="23"></line>
-                <line x1="8" y1="23" x2="16" y2="23"></line>
+                <path
+                  d="M12 19c-4.3 0-7.8-3.4-7.8-7.7 0-4.3 3.5-7.8 7.8-7.8 4.3 0 7.8 3.5 7.8 7.8 0 4.3-3.5 7.7-7.8 7.7z">
+                </path>
+                <path d="M12 19V5"></path>
+                <path d="M7 7.8c3.1 0 5 1.8 5 4.2 0 2.3-1.9 4.2-5 4.2"></path>
               </svg>
               Shared Artists
             </h4>
             <div class="shared-chips">
-              <span v-for="(artist, i) in matchedUser.sharedArtists.slice(0, 3)" :key="i" class="shared-chip">
+              <span v-for="(artist, i) in sharedArtists.slice(0, 3)" :key="i" class="shared-chip">
                 {{ artist }}
               </span>
-              <span v-if="matchedUser.sharedArtists.length > 3" class="more-chip">
-                +{{ matchedUser.sharedArtists.length - 3 }} more
+              <span v-if="sharedArtists.length > 3" class="more-chip">
+                +{{ sharedArtists.length - 3 }} more
               </span>
             </div>
           </div>
 
-          <div v-if="matchedUser.sharedGenres?.length" class="music-section">
+          <div v-if="hasSharedGenres" class="music-section">
             <h4>
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -92,11 +92,11 @@
               Shared Genres
             </h4>
             <div class="shared-chips">
-              <span v-for="(genre, i) in matchedUser.sharedGenres.slice(0, 3)" :key="i" class="shared-chip">
+              <span v-for="(genre, i) in sharedGenres.slice(0, 3)" :key="i" class="shared-chip">
                 {{ genre }}
               </span>
-              <span v-if="matchedUser.sharedGenres.length > 3" class="more-chip">
-                +{{ matchedUser.sharedGenres.length - 3 }} more
+              <span v-if="sharedGenres.length > 3" class="more-chip">
+                +{{ sharedGenres.length - 3 }} more
               </span>
             </div>
           </div>
@@ -123,17 +123,29 @@
 export default {
   name: 'MatchPopup',
   props: {
-    visible: {
-      type: Boolean,
-      default: false
-    },
-    matchedUser: {
+    visible: { type: Boolean, default: false },
+    matchedUser: { type: Object, default: () => null },
+    currentUser: { type: Object, required: true },
+    sharedMusic: {
       type: Object,
-      default: null
+      default: () => ({ artists: [], genres: [] })
+    }
+  },
+  computed: {
+    hasSharedMusicContent() {
+      return this.sharedMusic.artists.length > 0 || this.sharedMusic.genres.length > 0;
     },
-    currentUser: {
-      type: Object,
-      required: true
+    hasSharedArtists() {
+      return this.sharedMusic.artists.length > 0;
+    },
+    hasSharedGenres() {
+      return this.sharedMusic.genres.length > 0;
+    },
+    sharedArtists() {
+      return this.sharedMusic.artists;
+    },
+    sharedGenres() {
+      return this.sharedMusic.genres;
     }
   },
   methods: {
@@ -144,7 +156,6 @@ export default {
       this.closePopup();
     },
     goToChat() {
-      // Navigate to chat with this user
       if (this.matchedUser && this.matchedUser.id) {
         this.$router.push(`/chat/${this.matchedUser.id}`);
       }
@@ -155,8 +166,9 @@ export default {
       if (path.startsWith('http://') || path.startsWith('https://')) {
         return path;
       }
-      return `http://localhost:5000${path}`;
-    }
+      return `${window.location.origin}${path}`;
+    },
+    
   }
 }
 </script>
@@ -213,6 +225,8 @@ export default {
   background: linear-gradient(90deg, #6d28d9, #db2777);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-clip: text;
+  /* Standard property for modern browsers */
 }
 
 .close-button {

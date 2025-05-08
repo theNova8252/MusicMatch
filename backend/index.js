@@ -11,10 +11,13 @@ import { WebSocketServer } from 'ws';
 import sequelize from './config/db.js';
 import authRoutes from './routes/auth.js';
 import matchRoutes from './routes/match.js';
-import chatRoutes from './routes/chat.js';
+import chatRoutes from './routes/chatRoutes.js';
 import userRoutes from './routes/User.js';
 
-import './models/UserLike.js'; // ensure UserLike model is initialized
+import { userSockets } from './ws/socketStore.js';
+import { setupWebSocketHandlers } from './ws/socketHandler.js';
+
+import './models/UserLike.js';
 
 dotenv.config();
 
@@ -28,7 +31,7 @@ const pgPool = new Pool({
   port: process.env.DB_PORT,
 });
 
-// === Session Parser (reusable for both Express and WS) ===
+// === Session Parser ===
 const PgStore = PgSession(session);
 const sessionParser = session({
   store: new PgStore({
@@ -46,7 +49,7 @@ const sessionParser = session({
   },
 });
 
-// === Express App Setup ===
+// === Express Setup ===
 const app = express();
 app.use(sessionParser);
 app.use(
@@ -57,32 +60,33 @@ app.use(
 );
 app.use(bodyParser.json());
 app.use('/uploads', express.static('uploads'));
+
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/match', matchRoutes);
 app.use('/api/chat', chatRoutes);
 app.get('/', (req, res) => res.send('Music Match API is running!'));
 
-// === HTTP + WebSocket Setup ===
+// === HTTP + WS Server ===
 const server = http.createServer(app);
-const wss = new WebSocketServer({ noServer: true });
-const userSockets = new Map();
+const wss = new WebSocketServer({ server });
 
-server.on('upgrade', (request, socket, head) => {
-  sessionParser(request, {}, () => {
-    if (!request.session?.userId) {
-      socket.destroy();
-      return;
-    }
-
-    wss.handleUpgrade(request, socket, head, (ws) => {
-      const userId = request.session.userId;
+wss.on('connection', (ws, req) => {
+  sessionParser(req, {}, () => {
+    const userId = req.session?.userId;
+    if (userId) {
       userSockets.set(userId, ws);
+      console.log(`User ${userId} connected via WebSocket`);
 
       ws.on('close', () => {
         userSockets.delete(userId);
+        console.log(`User ${userId} disconnected`);
       });
-    });
+
+      setupWebSocketHandlers(ws, userId); // Optional if you want structured handling
+    } else {
+      ws.close();
+    }
   });
 });
 
@@ -90,13 +94,14 @@ server.on('upgrade', (request, socket, head) => {
 sequelize
   .sync({ alter: true })
   .then(() => {
-    console.log('Database synced.');
+    console.log('✅ Database synced.');
   })
   .catch((err) => {
-    console.error('Failed to sync database:', err.message);
+    console.error('❌ Failed to sync database:', err.message);
   });
 
 // === Start Server ===
-server.listen(process.env.PORT || 5000, () => {
-  console.log(`Server running on port ${process.env.PORT || 5000}`);
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });

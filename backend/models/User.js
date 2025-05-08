@@ -31,7 +31,10 @@ User.init(
       type: DataTypes.TEXT,
       allowNull: true,
     },
-    
+    recentlyPlayed: {
+      type: DataTypes.JSON, 
+      allowNull: true,
+    },
   },
   {
     sequelize,

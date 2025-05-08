@@ -6,11 +6,11 @@ const routes = [
   },
   {
     path: '/login',
-    component: () => import('pages/LoginPage.vue'), // ✅ Ensure correct path
+    component: () => import('pages/LoginPage.vue'), 
   },
   {
     path: '/dashboard',
-    component: () => import('pages/DashboardPage.vue'), // ✅ Ensure correct path
+    component: () => import('pages/DashboardPage.vue'), 
   },
   {
     path: '/:catchAll(.*)*',
@@ -18,7 +18,7 @@ const routes = [
   },
   {
     path: '/onboarding',
-    component: () => import('pages/OnboardingForm.vue'), // Ensure this file exists
+    component: () => import('pages/OnboardingForm.vue'), 
   },
   {
     path: '/:catchAll(.*)*',
@@ -26,7 +26,12 @@ const routes = [
   },
   {
     path: '/swipe',
-    component: () => import('pages/MatchSwipe.vue'), 
+    component: () => import('pages/MatchSwipe.vue'),
+  },
+  {
+    path: '/chat/:partnerId',
+    component: () => import('pages/ChatView.vue'), 
+    props: true,
   },
 ]
 
