@@ -295,6 +295,7 @@
 
 <script>
 import MatchPopup from '../components/MatchPopup.vue';
+import socket from 'src/boot/socket'; 
 export default {
   name: 'SwipeCards',
   components: {
@@ -590,6 +591,21 @@ export default {
   },
 
   mounted() {
+    if (this.user && this.user.id && socket) {
+      socket.emit('register', this.user.id);
+      console.log('📡 Socket registriert für User:', this.user.id);
+
+      socket.on('matchNotification', data => {
+        this.$q.notify({
+          color: 'positive',
+          message: data.message + ' mit ' + data.matchedWith,
+          position: 'top',
+        });
+        console.log('🔔 Echtzeit-Match erhalten:', data);
+      });
+    } else {
+      console.warn('⚠️ Socket oder User nicht vorhanden.');
+    }
     this.fetchAllUsers();
     this.pollingInterval = setInterval(this.fetchAllUsers, 5000);
 
@@ -606,6 +622,8 @@ export default {
         console.error('Error processing WebSocket message:', err);
       }
     });
+    
+    
 
   },
 

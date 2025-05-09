@@ -1,6 +1,7 @@
 import UserLike from '../models/UserLike.js';
 import User from '../models/User.js';
 import { userSockets } from '../ws/socketStore.js';
+import { notifyMatchByEmail } from './authController.js';
 
 export const likeUser = async (req, res) => {
   const fromUserId = req.session.userId;
@@ -58,7 +59,10 @@ export const likeUser = async (req, res) => {
       if (toSocket && toSocket.readyState === toSocket.OPEN) {
         toSocket.send(payloadForTo);
       }
+      await notifyMatchByEmail(fromUser, toUser);
+      await notifyMatchByEmail(toUser, fromUser);
     }
+    
 
     res.json({ success: true, mutualMatch: !!mutual });
   } catch (err) {

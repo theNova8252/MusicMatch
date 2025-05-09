@@ -16,7 +16,9 @@ router.get('/all', authMiddleware, async (req, res) => {
     if (!currentUser) {
       return res.status(404).json({ message: 'Current user not found.' });
     }
-const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+
+    const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+
     const currentArtists = (currentUser.favoriteArtists || '')
       .split(',')
       .map((a) => a.trim().toLowerCase())
@@ -42,14 +44,12 @@ const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
         'spotifyRefreshToken',
         'bio',
         'dateOfBirth',
-        'recentlyPlayed'
       ],
     });
 
     const enrichedUsers = await Promise.all(
       otherUsers.map(async (user) => {
-        const rawUser = user.toJSON(); // ← FIXED: get actual values from Sequelize instance
-        
+        const rawUser = user.toJSON();
 
         const theirArtists = (rawUser.favoriteArtists || '')
           .split(',')
@@ -110,29 +110,22 @@ const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
                 uri: playingRes.data.item.uri,
               };
             }
-            // Fetch recently played
-            try {
-              const recentlyRes = await axios.get(
-                'https://api.spotify.com/v1/me/player/recently-played?limit=5',
-                { headers },
-              );
 
-              if (recentlyRes.status === 200 && Array.isArray(recentlyRes.data.items)) {
-                recentlyPlayed = recentlyRes.data.items.map((item) => ({
-                  title: item.track?.name || 'Unknown Track',
-                  artist: item.track?.artists?.[0]?.name || 'Unknown Artist',
-                  playedAt: item.played_at,
-                  uri: item.track?.uri || null,
-                  albumImage: item.track?.album?.images?.[0]?.url || null,
-                }));
-              } else {
-                console.warn(`⚠️ Unexpected recentlyPlayed response format for user ${rawUser.id}`);
-              }
-            } catch (err) {
-              console.warn(
-                `⚠️ Failed to fetch recently played for user ${rawUser.id}:`,
-                err.response?.data || err.message,
-              );
+            const recentlyRes = await axios.get(
+              'https://api.spotify.com/v1/me/player/recently-played?limit=5',
+              { headers },
+            );
+
+            if (recentlyRes.status === 200 && Array.isArray(recentlyRes.data.items)) {
+              recentlyPlayed = recentlyRes.data.items.map((item) => ({
+                title: item.track?.name || 'Unknown Track',
+                artist: item.track?.artists?.[0]?.name || 'Unknown Artist',
+                playedAt: item.played_at,
+                uri: item.track?.uri || null,
+                albumImage: item.track?.album?.images?.[0]?.url || null,
+              }));
+            } else {
+              console.warn(`⚠️ Unexpected recentlyPlayed response format for user ${rawUser.id}`);
             }
           } catch (err) {
             console.warn(
@@ -142,27 +135,27 @@ const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
           }
         }
 
-      return {
-        ...rawUser,
-        profileImage: rawUser.profileImage?.startsWith('http')
-          ? rawUser.profileImage
-          : rawUser.profileImage
-          ? `${baseUrl}${rawUser.profileImage}`
-          : null,
-        compatibility,
-        sharedArtists,
-        sharedGenres,
-        favoriteGenres: theirGenres,
-        favoriteArtists: rawUser.favoriteArtists,
-        topTracks,
-        currentlyPlaying,
-        recentlyPlayed,
-        age: rawUser.dateOfBirth
-          ? Math.floor(
-              (new Date() - new Date(rawUser.dateOfBirth)) / (365.25 * 24 * 60 * 60 * 1000),
-            )
-          : null,
-      };
+        return {
+          ...rawUser,
+          profileImage: rawUser.profileImage?.startsWith('http')
+            ? rawUser.profileImage
+            : rawUser.profileImage
+            ? `${baseUrl}${rawUser.profileImage}`
+            : null,
+          compatibility,
+          sharedArtists,
+          sharedGenres,
+          favoriteGenres: theirGenres,
+          favoriteArtists: rawUser.favoriteArtists,
+          topTracks,
+          currentlyPlaying,
+          recentlyPlayed,
+          age: rawUser.dateOfBirth
+            ? Math.floor(
+                (new Date() - new Date(rawUser.dateOfBirth)) / (365.25 * 24 * 60 * 60 * 1000),
+              )
+            : null,
+        };
       }),
     );
 
@@ -172,6 +165,24 @@ const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
     res.status(500).json({ error: 'Something went wrong.' });
   }
 });
+
+router.get('/me', async (req, res) => {
+  try {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: 'Nicht eingeloggt' });
+    }
+
+    const user = await User.findByPk(req.session.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'Benutzer nicht gefunden' });
+    }
+
+    res.json({ user });
+  } catch (error) {
+    res.status(500).json({ message: 'Fehler beim Abrufen des Benutzers' });
+  }
+});
+
 router.post('/like/:toUserId', authMiddleware, likeUser);
 
 export default router;

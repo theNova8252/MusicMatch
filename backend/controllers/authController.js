@@ -751,3 +751,25 @@ export const removeFavoriteArtist = async (req, res) => {
     res.status(500).json({ message: 'Failed to remove artist.' });
   }
 };
+export const notifyMatchByEmail = async (user, matchedUser) => {
+  try {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    await transporter.sendMail({
+      from: '"MusicMatch" <noreply@musicmatch.com>',
+      to: user.email,
+      subject: '🎉 It’s a Match!',
+      html: `<p>Hey ${user.name},<br>Du hast ein neues Match mit <strong>${matchedUser.name}</strong>!</p>`,
+    });
+
+    console.log('✅ Match-Mail versendet an:', user.email);
+  } catch (err) {
+    console.error('❌ Fehler beim Senden der Match-Mail:', err);
+  }
+};

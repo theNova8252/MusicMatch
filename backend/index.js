@@ -7,6 +7,7 @@ import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
 import http from 'http';
 import { WebSocketServer } from 'ws';
+import { Server } from 'socket.io';
 
 import sequelize from './config/db.js';
 import authRoutes from './routes/auth.js';
@@ -65,12 +66,22 @@ app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/match', matchRoutes);
 app.use('/api/chat', chatRoutes);
+
 app.get('/', (req, res) => res.send('Music Match API is running!'));
 
-// === HTTP + WS Server ===
+// === HTTP + WebSocketServer (wss) ===
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server });
 
+export const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST'],
+  },
+});
+
+export const userSocketMap = new Map();
+
+const wss = new WebSocketServer({ server });
 wss.on('connection', (ws, req) => {
   sessionParser(req, {}, () => {
     const userId = req.session?.userId;
@@ -83,7 +94,7 @@ wss.on('connection', (ws, req) => {
         console.log(`User ${userId} disconnected`);
       });
 
-      setupWebSocketHandlers(ws, userId); // Optional if you want structured handling
+      setupWebSocketHandlers(ws, userId);
     } else {
       ws.close();
     }
