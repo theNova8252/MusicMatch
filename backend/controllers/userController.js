@@ -25,32 +25,33 @@ export const likeUser = async (req, res) => {
       const fromUser = await User.findByPk(fromUserId);
       const toUser = await User.findByPk(toUserId);
 
-      const fromSocket = userSockets.get(fromUserId);
-      const toSocket = userSockets.get(toUserId);
+      const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+
+      const formatUserForSocket = (user) => ({
+        id: user.id,
+        name: user.name,
+        profileImage: user.profileImage?.startsWith('http')
+          ? user.profileImage
+          : user.profileImage
+          ? `${baseUrl}${user.profileImage}`
+          : null,
+        compatibility: 36,
+        sharedGenres: user.sharedGenres || [],
+        sharedArtists: user.sharedArtists || [],
+      });
 
       const payloadForFrom = JSON.stringify({
         type: 'mutualMatch',
-        user: {
-          id: toUser.id,
-          name: toUser.name,
-          profileImage: toUser.profileImage,
-          compatibility: 36,
-          sharedGenres: toUser.sharedGenres || [],
-          sharedArtists: toUser.sharedArtists || [],
-        },
+        user: formatUserForSocket(toUser),
       });
 
       const payloadForTo = JSON.stringify({
         type: 'mutualMatch',
-        user: {
-          id: fromUser.id,
-          name: fromUser.name,
-          profileImage: fromUser.profileImage,
-          compatibility: 36,
-          sharedGenres: fromUser.sharedGenres || [],
-          sharedArtists: fromUser.sharedArtists || [],
-        },
+        user: formatUserForSocket(fromUser),
       });
+
+      const fromSocket = userSockets.get(fromUserId);
+      const toSocket = userSockets.get(toUserId);
 
       if (fromSocket && fromSocket.readyState === fromSocket.OPEN) {
         fromSocket.send(payloadForFrom);
@@ -59,10 +60,10 @@ export const likeUser = async (req, res) => {
       if (toSocket && toSocket.readyState === toSocket.OPEN) {
         toSocket.send(payloadForTo);
       }
+
       await notifyMatchByEmail(fromUser, toUser);
       await notifyMatchByEmail(toUser, fromUser);
     }
-    
 
     res.json({ success: true, mutualMatch: !!mutual });
   } catch (err) {

@@ -108,6 +108,7 @@ router.get('/all', authMiddleware, async (req, res) => {
                 title: playingRes.data.item.name,
                 artist: playingRes.data.item.artists[0]?.name || 'Unknown Artist',
                 uri: playingRes.data.item.uri,
+                albumImage: playingRes.data.item.album.images[0]?.url || null,
               };
             }
 

@@ -80,12 +80,12 @@
                   <div class="current-track-title">{{ user.currentlyPlaying.title }}</div>
                   <div class="current-track-artist">{{ user.currentlyPlaying.artist }}</div>
                 </div>
-                <button class="play-button" @click="playSpotifyTrack(user.currentlyPlaying?.uri)">
+                <!-- <button class="play-button" @click="playSpotifyTrack(user.currentlyPlaying?.uri)">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polygon points="5 3 19 12 5 21 5 3"></polygon>
                   </svg>
-                </button>
+                </button> -->
               </div>
             </div>
             <div v-if="user.recentlyPlayed && user.recentlyPlayed.length" class="music-section recently-played">
@@ -315,6 +315,7 @@ export default {
       matchedUser: null,
       seenUserIds: new Set(),
       sharedMusic: { artists: [], genres: [] },
+      currentUser: {}
 
     } 
   },
@@ -322,18 +323,18 @@ export default {
     filteredUsers() {
       return this.visibleUsers.filter(user => user);
     },
-    currentUser() {
-      const user = this.$store.state.user || {};
-      if (!user.profileImage) return user;
-
-      const isFullUrl = user.profileImage.startsWith('http://') || user.profileImage.startsWith('https://');
-      return {
-        ...user,
-        profileImage: isFullUrl ? user.profileImage : `${window.location.origin}${user.profileImage}`
-      };
+  },
+  watch: {
+    '$store.state.user': {
+      handler() {
+        this.currentUser = this.getProcessedCurrentUser();
+      },
+      immediate: true,
+      deep: true
     }
   },
   methods: {
+   
     // In the fetchAllUsers method, ensure currentlyPlaying is properly processed:
     async fetchAllUsers() {
       try {
@@ -387,7 +388,8 @@ export default {
               currentlyPlaying: user.currentlyPlaying ? {
                 title: user.currentlyPlaying.title || 'Unknown Track',
                 artist: user.currentlyPlaying.artist || 'Unknown Artist',
-                uri: user.currentlyPlaying.uri || null
+                uri: user.currentlyPlaying.uri || null,
+                albumImage: user.currentlyPlaying.albumImage || null,
               } : null,
               recentlyPlayed: Array.isArray(user.recentlyPlayed) ?
                 user.recentlyPlayed.map(track => {
@@ -415,7 +417,8 @@ export default {
               existing.currentlyPlaying = {
                 title: newUser.currentlyPlaying.title || 'Unknown Track',
                 artist: newUser.currentlyPlaying.artist || 'Unknown Artist',
-                uri: newUser.currentlyPlaying.uri || null
+                uri: newUser.currentlyPlaying.uri || null,
+                albumImage: newUser.currentlyPlaying.albumImage || null,
               };
             }
           });
@@ -426,7 +429,34 @@ export default {
         this.error = err.message;
       }
     },
-   
+    async fetchCurrentUser() {
+      try {
+        const res = await fetch('http://localhost:5000/api/users/me', {
+          credentials: 'include'
+        });
+        const data = await res.json();
+
+        if (data.user) {
+          this.$store.commit('setUser', data.user);
+          this.currentUser = this.getProcessedCurrentUser(); // <- ✅ important
+        }
+      } catch (err) {
+        console.error('❌ Failed to fetch current user:', err);
+      }
+    },
+    getProcessedCurrentUser() {
+      const user = this.$store.state.user || {};
+      const image = user.profileImage;
+
+      if (!image) return { ...user, profileImage: null };
+
+      const isFullUrl = image.startsWith('http://') || image.startsWith('https://');
+
+      return {
+        ...user,
+        profileImage: isFullUrl ? image : `${window.location.origin}${image.startsWith('/') ? '' : '/'}${image}`
+      };
+    },
     async playSpotifyTrack(uri) {
       if (!uri) return;
       try {
@@ -480,11 +510,13 @@ export default {
     },
 
     getFullImageUrl(path) {
-      if (!path) return 'https://via.placeholder.com/400x500?text=No+Image';
+      if (!path || typeof path !== 'string') {
+        return 'https://via.placeholder.com/400x500?text=No+Image';
+      }
       if (path.startsWith('http://') || path.startsWith('https://')) {
         return path;
       }
-      return `http://localhost:5000${path}`;
+      return `${window.location.origin}${path}`;
     },
 
     navigateToDashboard() {
@@ -563,8 +595,21 @@ export default {
         }
         const data = await res.json();
         if (data.mutualMatch) {
-          const matched = this.filteredUsers[this.activeCardIndex];
-          this.matchedUser = matched;
+          const matched = this.visibleUsers.find(u => u.id === userId);
+
+          if (!matched) {
+            console.error('❌ No matched user found at current index');
+            return;
+          }
+
+          this.currentUser = this.getProcessedCurrentUser();
+          console.log("✅ currentUser:", this.currentUser);
+
+          this.matchedUser = {
+            ...matched,
+            profileImage: this.getFullImageUrl(matched.profileImage)
+          };
+
           this.sharedMusic = this.getSharedMusic(this.currentUser, matched);
           this.showMatchPopup = true;
         }
@@ -590,7 +635,9 @@ export default {
     this.matchedUser = null;
   },
 
+
   mounted() {
+    this.fetchCurrentUser();
     if (this.user && this.user.id && socket) {
       socket.emit('register', this.user.id);
       console.log('📡 Socket registriert für User:', this.user.id);

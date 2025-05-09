@@ -15,11 +15,12 @@
             </svg>
           </button>
         </div>
-
-        <div class="match-profiles">
+      
+      <div class="match-profiles">
+      <!--
           <div class="profile">
             <div class="profile-image"
-              :style="{ backgroundImage: currentUser ? `url(${getFullImageUrl(currentUser.profileImage)})` : '' }">
+              :style="{ backgroundImage: currentUser?.profileImage ? `url(${getFullImageUrl(currentUser.profileImage)})` : '' }">
               <div class="profile-circle"></div>
             </div>
             <p class="profile-name">{{ currentUser.name }}</p>
@@ -33,17 +34,19 @@
                   d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z">
                 </path>
               </svg>
-            </div>
-          </div>
+            </div> 
+          </div> -->
 
-          <div class="profile">
-            <div class="profile-image"
-              :style="{ backgroundImage: matchedUser ? `url(${getFullImageUrl(matchedUser.profileImage)})` : '' }">
-              <div class="profile-circle"></div>
-            </div>
-            <p class="profile-name">{{ matchedUser ? matchedUser.name : 'Match' }}</p>
-          </div>
-        </div>
+          <div class="match-profiles single-profile">
+  <div class="profile">
+    <div class="profile-image"
+      :style="{ backgroundImage: matchedUser ? `url(${getFullImageUrl(matchedUser.profileImage)})` : '' }">
+      <div class="profile-circle"></div>
+    </div>
+    <p class="profile-name">{{ matchedUser ? matchedUser.name : 'Match' }}</p>
+  </div>
+</div>
+</div>
 
         <div class="match-compatibility" v-if="matchedUser && matchedUser.compatibility">
           <div class="compatibility-bar">
@@ -130,7 +133,17 @@ export default {
       type: Object,
       default: () => ({ artists: [], genres: [] })
     }
+    
   },
+mounted() {
+  console.log("MatchPopup received:", {
+    currentUser: this.currentUser,
+    matchedUser: this.matchedUser
+  });
+  console.log('MATCH POPUP currentUser.image:', this.currentUser?.profileImage);
+  console.log('MATCH POPUP matchedUser.image:', this.matchedUser?.profileImage);
+},
+
   computed: {
     hasSharedMusicContent() {
       return this.sharedMusic.artists.length > 0 || this.sharedMusic.genres.length > 0;
@@ -162,15 +175,18 @@ export default {
       this.closePopup();
     },
     getFullImageUrl(path) {
-      if (!path) return 'https://via.placeholder.com/300x300?text=No+Image';
-      if (path.startsWith('http://') || path.startsWith('https://')) {
-        return path;
-      }
-      return `${window.location.origin}${path}`;
-    },
-    
+  if (!path) return 'https://via.placeholder.com/300x300?text=No+Image';
+
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
   }
+
+  return `${window.location.origin}${path.startsWith('/') ? path : '/' + path}`;
 }
+    
+  },
+}
+
 </script>
 
 <style scoped>
@@ -544,5 +560,8 @@ export default {
   .match-title h2 {
     font-size: 22px;
   }
+}
+.match-profiles.single-profile {
+  justify-content: center;
 }
 </style>
