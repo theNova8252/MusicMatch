@@ -1,11 +1,23 @@
 <template>
-  <div class="swipe-container">
+  <div class="swipe-container" :class="{ 'dark-mode': isDarkMode }">
     <button class="back-button" @click="navigateToDashboard">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M19 12H5M12 19l-7-7 7-7" />
       </svg>
       <span>Dashboard</span>
+    </button>
+    <button class="darkmode-toggle" @click="toggleDarkMode" :aria-pressed="isDarkMode">
+      <svg v-if="!isDarkMode" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="5" />
+        <path
+          d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+      </svg>
+      <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+      </svg>
     </button>
 
     <div class="card-stack" v-if="filteredUsers.length">
@@ -59,7 +71,6 @@
                 <div class="match-percentage">{{ user.compatibility }}%</div>
               </div>
             </div>
-            <!-- Add this after the music-match-section div and before the sharedArtists section -->
             <div v-if="user.currentlyPlaying" class="music-section currently-playing">
               <div class="section-header">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -80,12 +91,6 @@
                   <div class="current-track-title">{{ user.currentlyPlaying.title }}</div>
                   <div class="current-track-artist">{{ user.currentlyPlaying.artist }}</div>
                 </div>
-                <!-- <button class="play-button" @click="playSpotifyTrack(user.currentlyPlaying?.uri)">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                  </svg>
-                </button> -->
               </div>
             </div>
             <div v-if="user.recentlyPlayed && user.recentlyPlayed.length" class="music-section recently-played">
@@ -118,12 +123,6 @@
                       </div>
                     </div>
                   </div>
-                  <!-- <button class="play-button" @click="playSpotifyTrack(track.uri)">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                    </svg>
-                  </button> -->
                 </div>
               </div>
             </div>
@@ -221,12 +220,6 @@
                     <div class="track-title">{{ track && track.title ? track.title : 'Unknown Track' }}</div>
                     <div class="track-artist">{{ track && track.artist ? track.artist : 'Unknown Artist' }}</div>
                   </div>
-                  <!-- <button class="play-button" @click="playSpotifyTrack(user.currentlyPlaying?.uri)">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <polygon points="5 3 19 12 5 21 5 3"></polygon> 
-                    </svg>
-                  </button> -->
                 </div>
               </div>
             </div>
@@ -291,11 +284,92 @@
     <MatchPopup :visible="showMatchPopup" :matchedUser="matchedUser" :currentUser="currentUser"
       :sharedMusic="sharedMusic" @close="showMatchPopup = false" />
   </div>
+  <div class="vinyl-bg">
+    <svg class="vinyl vinyl1" viewBox="0 0 60 60">
+      <circle cx="30" cy="30" r="28" fill="#fff" stroke="#6d28d9" stroke-width="4" />
+      <circle cx="30" cy="30" r="10" fill="#6d28d9" />
+      <circle cx="30" cy="30" r="3" fill="#fff" />
+    </svg>
+    <svg class="vinyl vinyl2" viewBox="0 0 60 60">
+      <circle cx="30" cy="30" r="28" fill="#fff" stroke="#8b5cf6" stroke-width="4" />
+      <circle cx="30" cy="30" r="10" fill="#8b5cf6" />
+      <circle cx="30" cy="30" r="3" fill="#fff" />
+    </svg>
+  </div>
+  <div class="music-bokeh-bg">
+    <div class="bokeh bokeh1"></div>
+    <div class="bokeh bokeh2"></div>
+    <div class="bokeh bokeh3"></div>
+    <div class="bokeh bokeh4"></div>
+    <div class="bokeh bokeh5"></div>
+    <div class="bokeh bokeh6"></div>
+  </div>
+  <div class="music-shapes-bg">
+    <svg class="music-shape note1" viewBox="0 0 32 32">
+      <path d="M24 4v16.5a6 6 0 1 1-2-4.5V8h-8V20.5a6 6 0 1 1-2-4.5V4h12z" fill="#c4b5fd" opacity="0.7" />
+    </svg>
+    <svg class="music-shape star1" viewBox="0 0 32 32">
+      <polygon points="16,3 19,13 29,13 21,19 24,29 16,23 8,29 11,19 3,13 13,13" fill="#a78bfa" opacity="0.5" />
+    </svg>
+    <svg class="music-shape wave1" viewBox="0 0 64 16">
+      <path d="M0 8 Q8 0 16 8 T32 8 T48 8 T64 8" stroke="#ede9fe" stroke-width="2" fill="none" opacity="0.7" />
+    </svg>
+  </div>
+  <div class="extra-bg-shapes">
+    <svg class="shape vinyl3" viewBox="0 0 60 60">
+      <circle cx="30" cy="30" r="28" fill="#fff" stroke="#f472b6" stroke-width="4" />
+      <circle cx="30" cy="30" r="10" fill="#f472b6" />
+      <circle cx="30" cy="30" r="3" fill="#fff" />
+    </svg>
+    <svg class="shape note2" viewBox="0 0 32 32">
+      <path d="M24 4v16.5a6 6 0 1 1-2-4.5V8h-8V20.5a6 6 0 1 1-2-4.5V4h12z" fill="#f472b6" opacity="0.5" />
+    </svg>
+    <svg class="shape star2" viewBox="0 0 32 32">
+      <polygon points="16,3 19,13 29,13 21,19 24,29 16,23 8,29 11,19 3,13 13,13" fill="#fbbf24" opacity="0.4" />
+    </svg>
+    <svg class="shape sparkle1" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="2" fill="#fff" opacity="0.7" />
+      <g stroke="#fbbf24" stroke-width="1.5" opacity="0.7">
+        <line x1="12" y1="2" x2="12" y2="6" />
+        <line x1="12" y1="18" x2="12" y2="22" />
+        <line x1="2" y1="12" x2="6" y2="12" />
+        <line x1="18" y1="12" x2="22" y2="12" />
+      </g>
+    </svg>
+    <svg class="shape sparkle2" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="1.2" fill="#fff" opacity="0.5" />
+      <g stroke="#a78bfa" stroke-width="1" opacity="0.5">
+        <line x1="12" y1="4" x2="12" y2="8" />
+        <line x1="12" y1="16" x2="12" y2="20" />
+        <line x1="4" y1="12" x2="8" y2="12" />
+        <line x1="16" y1="12" x2="20" y2="12" />
+      </g>
+    </svg>
+    <svg class="shape wave2" viewBox="0 0 64 16">
+      <path d="M0 8 Q8 0 16 8 T32 8 T48 8 T64 8" stroke="#f472b6" stroke-width="2" fill="none" opacity="0.5" />
+    </svg>
+  </div>
+
+
+  <div class="bottom-waves-bg">
+    <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg" class="wave-svg">
+      <defs>
+        <linearGradient id="prettyWaveGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ede9fe" stop-opacity="0.95" />
+          <stop offset="60%" stop-color="#c4b5fd" stop-opacity="0.7" />
+          <stop offset="100%" stop-color="#a78bfa" stop-opacity="0.5" />
+        </linearGradient>
+      </defs>
+      <path fill="url(#prettyWaveGradient)" fill-opacity="1" d="M0,80 C360,120 1080,40 1440,80 L1440,120 L0,120 Z" />
+      <path fill="#c4b5fd" fill-opacity="0.35" d="M0,100 C480,60 960,140 1440,100 L1440,120 L0,120 Z" />
+      <path fill="#a78bfa" fill-opacity="0.18" d="M0,110 C600,90 900,130 1440,110 L1440,120 L0,120 Z" />
+    </svg>
+  </div>
 </template>
 
 <script>
 import MatchPopup from '../components/MatchPopup.vue';
-import socket from 'src/boot/socket'; 
+import socket from 'src/boot/socket';
 export default {
   name: 'SwipeCards',
   components: {
@@ -315,9 +389,9 @@ export default {
       matchedUser: null,
       seenUserIds: new Set(),
       sharedMusic: { artists: [], genres: [] },
-      currentUser: {}
-
-    } 
+      currentUser: {},
+      isDarkMode: false
+    }
   },
   computed: {
     filteredUsers() {
@@ -334,8 +408,6 @@ export default {
     }
   },
   methods: {
-   
-    // In the fetchAllUsers method, ensure currentlyPlaying is properly processed:
     async fetchAllUsers() {
       try {
         const res = await fetch('http://localhost:5000/api/users/all', {
@@ -357,60 +429,58 @@ export default {
         const newUserData = data.users;
 
         if (this.visibleUsers.length === 0) {
-          // Initial full setup
           this.visibleUsers = newUserData
-            .filter(user => !this.seenUserIds.has(user.id)) 
+            .filter(user => !this.seenUserIds.has(user.id))
             .map(user => {
-            if (!user || typeof user !== 'object') return null;
+              if (!user || typeof user !== 'object') return null;
 
-            return {
-              id: user.id || `temp-${Math.random().toString(36).substring(2, 11)}`,
-              name: user.name || 'Unknown User',
-              age: user.age || null,
-              bio: user.bio || '',
-              bioExpanded: false,
-              location: user.location || null,
-              profileImage: user.profileImage || null,
-              compatibility: user.compatibility || 0,
-              sharedGenres: Array.isArray(user.sharedGenres) ? user.sharedGenres : [],
-              sharedArtists: Array.isArray(user.sharedArtists) ? user.sharedArtists : [],
-              favoriteGenres: Array.isArray(user.favoriteGenres) ? user.favoriteGenres : [],
-              favoriteArtists: user.favoriteArtists || '',
-              topTracks: Array.isArray(user.topTracks) ?
-                user.topTracks.map(track => {
-                  if (!track || typeof track !== 'object') return { title: 'Unknown', artist: 'Unknown' };
-                  return {
-                    title: track.title || 'Unknown Track',
-                    artist: track.artist || 'Unknown Artist'
-                  };
-                }) : [],
-              socialMedia: user.socialMedia || null,
-              currentlyPlaying: user.currentlyPlaying ? {
-                title: user.currentlyPlaying.title || 'Unknown Track',
-                artist: user.currentlyPlaying.artist || 'Unknown Artist',
-                uri: user.currentlyPlaying.uri || null,
-                albumImage: user.currentlyPlaying.albumImage || null,
-              } : null,
-              recentlyPlayed: Array.isArray(user.recentlyPlayed) ?
-                user.recentlyPlayed.map(track => {
-                  if (!track || typeof track !== 'object') return {
-                    title: 'Unknown',
-                    artist: 'Unknown',
-                    playedAt: null
-                  };
-                  return {
-                    title: track.title || 'Unknown Track',
-                    artist: track.artist || 'Unknown Artist',
-                    playedAt: track.playedAt || null,
-                    uri: track.uri || null,
-                    albumImage: track.albumImage || null
-                  };
-                }) : [],
-            };
-          }).filter(Boolean);
+              return {
+                id: user.id || `temp-${Math.random().toString(36).substring(2, 11)}`,
+                name: user.name || 'Unknown User',
+                age: user.age || null,
+                bio: user.bio || '',
+                bioExpanded: false,
+                location: user.location || null,
+                profileImage: user.profileImage || null,
+                compatibility: user.compatibility || 0,
+                sharedGenres: Array.isArray(user.sharedGenres) ? user.sharedGenres : [],
+                sharedArtists: Array.isArray(user.sharedArtists) ? user.sharedArtists : [],
+                favoriteGenres: Array.isArray(user.favoriteGenres) ? user.favoriteGenres : [],
+                favoriteArtists: user.favoriteArtists || '',
+                topTracks: Array.isArray(user.topTracks) ?
+                  user.topTracks.map(track => {
+                    if (!track || typeof track !== 'object') return { title: 'Unknown', artist: 'Unknown' };
+                    return {
+                      title: track.title || 'Unknown Track',
+                      artist: track.artist || 'Unknown Artist'
+                    };
+                  }) : [],
+                socialMedia: user.socialMedia || null,
+                currentlyPlaying: user.currentlyPlaying ? {
+                  title: user.currentlyPlaying.title || 'Unknown Track',
+                  artist: user.currentlyPlaying.artist || 'Unknown Artist',
+                  uri: user.currentlyPlaying.uri || null,
+                  albumImage: user.currentlyPlaying.albumImage || null,
+                } : null,
+                recentlyPlayed: Array.isArray(user.recentlyPlayed) ?
+                  user.recentlyPlayed.map(track => {
+                    if (!track || typeof track !== 'object') return {
+                      title: 'Unknown',
+                      artist: 'Unknown',
+                      playedAt: null
+                    };
+                    return {
+                      title: track.title || 'Unknown Track',
+                      artist: track.artist || 'Unknown Artist',
+                      playedAt: track.playedAt || null,
+                      uri: track.uri || null,
+                      albumImage: track.albumImage || null
+                    };
+                  }) : [],
+              };
+            }).filter(Boolean);
 
         } else {
-          // Just update `currentlyPlaying`
           newUserData.forEach(newUser => {
             const existing = this.visibleUsers.find(u => u.id === newUser.id);
             if (existing && newUser.currentlyPlaying) {
@@ -438,7 +508,7 @@ export default {
 
         if (data.user) {
           this.$store.commit('setUser', data.user);
-          this.currentUser = this.getProcessedCurrentUser(); // <- ✅ important
+          this.currentUser = this.getProcessedCurrentUser();
         }
       } catch (err) {
         console.error('❌ Failed to fetch current user:', err);
@@ -463,7 +533,7 @@ export default {
         await fetch('https://api.spotify.com/v1/me/player/play', {
           method: 'PUT',
           headers: {
-            Authorization: `Bearer ${this.$root.spotifyAccessToken}`, // You'll need to inject/store this properly
+            Authorization: `Bearer ${this.$root.spotifyAccessToken}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ uris: [uri] }),
@@ -480,35 +550,28 @@ export default {
       const playedTime = new Date(timestamp);
       const diffMs = now - playedTime;
 
-      // Convert to minutes
       const diffMins = Math.floor(diffMs / 60000);
 
       if (diffMins < 60) {
         return diffMins === 1 ? '1 min ago' : `${diffMins} mins ago`;
       }
 
-      // Convert to hours
       const diffHours = Math.floor(diffMins / 60);
       if (diffHours < 24) {
         return diffHours === 1 ? '1 hr ago' : `${diffHours} hrs ago`;
       }
 
-      // Convert to days
       const diffDays = Math.floor(diffHours / 24);
       return diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
     },
-
-
     parseArtists(artistsString) {
       if (!artistsString || typeof artistsString !== 'string') return [];
       return artistsString.split(',').map(artist => artist.trim()).filter(Boolean);
     },
-
     parseSharedArtists(sharedArtistsArray) {
       if (!Array.isArray(sharedArtistsArray)) return [];
       return sharedArtistsArray;
     },
-
     getFullImageUrl(path) {
       if (!path || typeof path !== 'string') {
         return 'https://via.placeholder.com/400x500?text=No+Image';
@@ -518,17 +581,14 @@ export default {
       }
       return `${window.location.origin}${path}`;
     },
-
     navigateToDashboard() {
       this.$router.push('/dashboard');
     },
-
     toggleBio(user) {
       if (user) {
         user.bioExpanded = !user.bioExpanded;
       }
     },
-
     getCardStyle(index) {
       if (index !== this.activeCardIndex) {
         const zIndex = this.filteredUsers.length - index;
@@ -544,13 +604,12 @@ export default {
         zIndex: this.filteredUsers.length + 1
       };
     },
-
     swipeLeft() {
       if (this.filteredUsers.length === 0) return;
 
       if (this.visibleUsers[this.activeCardIndex]) {
         const userId = this.visibleUsers[this.activeCardIndex].id;
-        this.seenUserIds.add(userId); // Mark as seen
+        this.seenUserIds.add(userId);
         this.visibleUsers[this.activeCardIndex].direction = 'left';
 
         setTimeout(() => {
@@ -562,14 +621,12 @@ export default {
         }, 300);
       }
     },
-
-
     swipeRight() {
       if (this.filteredUsers.length === 0) return;
 
       if (this.visibleUsers[this.activeCardIndex]) {
         const userId = this.visibleUsers[this.activeCardIndex].id;
-        this.seenUserIds.add(userId); // Mark as seen
+        this.seenUserIds.add(userId);
         this.visibleUsers[this.activeCardIndex].direction = 'right';
         this.likeUser(userId);
 
@@ -582,7 +639,6 @@ export default {
         }, 300);
       }
     },
-
     async likeUser(userId) {
       try {
         const res = await fetch(`http://localhost:5000/api/users/like/${userId}`, {
@@ -616,26 +672,27 @@ export default {
       } catch (err) {
         console.error('Failed to like user:', err);
       }
-    }
+    },
+    getSharedMusic(currentUser, matchedUser) {
+      const sharedArtists = currentUser.favoriteArtists?.filter(artist =>
+        matchedUser.favoriteArtists?.includes(artist)
+      ) || [];
+
+      const sharedGenres = currentUser.favoriteGenres?.filter(genre =>
+        matchedUser.favoriteGenres?.includes(genre)
+      ) || [];
+
+      return { artists: sharedArtists, genres: sharedGenres };
+    },
+    closeMatchPopup() {
+      this.showMatchPopup = false;
+      this.matchedUser = null;
+    },
+    toggleDarkMode() {
+      this.isDarkMode = !this.isDarkMode;
+      document.documentElement.classList.toggle('dark-mode', this.isDarkMode);
+    },
   },
-  getSharedMusic(currentUser, matchedUser) {
-    const sharedArtists = currentUser.favoriteArtists?.filter(artist =>
-      matchedUser.favoriteArtists?.includes(artist)
-    ) || [];
-
-    const sharedGenres = currentUser.favoriteGenres?.filter(genre =>
-      matchedUser.favoriteGenres?.includes(genre)
-    ) || [];
-
-    return { artists: sharedArtists, genres: sharedGenres };
-  },
-
-  closeMatchPopup() {
-    this.showMatchPopup = false;
-    this.matchedUser = null;
-  },
-
-
   mounted() {
     this.fetchCurrentUser();
     if (this.user && this.user.id && socket) {
@@ -669,18 +726,11 @@ export default {
         console.error('Error processing WebSocket message:', err);
       }
     });
-    
-    
-
   },
-
   beforeUnmount() {
     clearInterval(this.pollingInterval);
   },
- 
-  
 }
-
 </script>
 
 <style>
@@ -692,7 +742,8 @@ export default {
 
 body {
   font-family: 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background-color: #f5f7fa;
+  background: linear-gradient(135deg, #f5f7fa 0%, #ede9fe 100%);
+  min-height: 100vh;
   color: #333;
 }
 
@@ -705,6 +756,7 @@ body {
   overflow: hidden;
   padding: 0 20px;
   position: relative;
+  z-index: 10;
 }
 
 .back-button {
@@ -891,6 +943,7 @@ body {
   font-size: 18px;
   color: #6d28d9;
 }
+
 .album-cover {
   width: 40px;
   height: 40px;
@@ -898,6 +951,7 @@ body {
   object-fit: cover;
   margin-right: 10px;
 }
+
 .music-section {
   background-color: #f9f9f9;
   padding: 12px;
@@ -1019,8 +1073,7 @@ body {
 .track-title {
   font-size: 14px;
   font-weight: 600;
-  color: #111;
-  line-height: 1.2;
+  color: #333;
 }
 
 .track-artist {
@@ -1141,47 +1194,73 @@ body {
 .action-buttons {
   display: flex;
   justify-content: center;
-  gap: 20px;
-  margin-top: 20px;
-  z-index: 100;
+  gap: 36px;
+  margin-top: 32px;
+  margin-bottom: 32px;
+  z-index: 10;
+  position: relative;
+  left: 0;
+  right: 0;
+  pointer-events: auto;
 }
 
 .action-button {
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-  transition: all 0.2s ease;
-}
-
-.action-button:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, #ede9fe 60%, #c4b5fd 100%);
+  box-shadow: 0 8px 32px 0 #a78bfa33, 0 2px 8px #c4b5fd22;
+  transition: all 0.18s cubic-bezier(.4, 0, .2, 1);
+  position: relative;
+  outline: none;
+  border: 2px solid #ede9fe;
 }
 
 .action-button.reject {
-  background-color: white;
+  background: linear-gradient(135deg, #fff1f2 60%, #f472b6 100%);
+  border: 2px solid #f472b6;
 }
 
 .action-button.reject svg {
-  color: #ff5c5c;
-  width: 28px;
-  height: 28px;
+  color: #f472b6;
+  width: 32px;
+  height: 32px;
 }
 
 .action-button.like {
-  background-color: #6d28d9;
+  background: linear-gradient(135deg, #ede9fe 60%, #a78bfa 100%);
+  border: 2px solid #a78bfa;
 }
 
 .action-button.like svg {
-  color: white;
-  width: 28px;
-  height: 28px;
+  color: #7c3aed;
+  width: 32px;
+  height: 32px;
+}
+
+.action-button:after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 #a78bfa44;
+  transition: box-shadow 0.2s;
+  pointer-events: none;
+}
+
+.action-button:active:after,
+.action-button:focus:after {
+  box-shadow: 0 0 0 8px #a78bfa22;
+}
+
+.action-button:hover {
+  transform: translateY(-6px) scale(1.06);
+  box-shadow: 0 16px 48px 0 #a78bfa44, 0 4px 16px #c4b5fd33;
 }
 
 .empty-state {
@@ -1229,7 +1308,6 @@ body {
   box-shadow: 0 6px 15px rgba(109, 40, 217, 0.3);
 }
 
-/* Loading states */
 .loading-container {
   display: flex;
   flex-direction: column;
@@ -1269,7 +1347,6 @@ body {
   }
 }
 
-/* Media Queries */
 @media (max-width: 768px) {
   .card-stack {
     max-width: 340px;
@@ -1342,29 +1419,6 @@ body {
   }
 }
 
-/* Animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
 .card-inner {
   animation: fadeIn 0.3s ease-out;
 }
@@ -1373,7 +1427,6 @@ body {
   animation: slideUp 0.3s ease-out;
 }
 
-/* Scrollbar styling */
 .card-content::-webkit-scrollbar {
   width: 6px;
 }
@@ -1392,7 +1445,6 @@ body {
   background: #ccc;
 }
 
-/* Accessibility improvements */
 .action-button:focus,
 .back-button:focus,
 .expand-button:focus,
@@ -1403,7 +1455,6 @@ body {
   outline-offset: 2px;
 }
 
-/* Touch device improvements */
 @media (hover: none) {
   .action-button {
     transition: transform 0.1s ease;
@@ -1413,7 +1464,7 @@ body {
     transform: scale(0.95);
   }
 }
-/* Currently Playing Section */
+
 .currently-playing {
   background-color: #f0fff4;
   border-left: 3px solid #10b981;
@@ -1486,6 +1537,7 @@ body {
     height: 18px;
   }
 }
+
 .recently-played {
   background-color: #f5f0ff;
   border-left: 3px solid #8b5cf6;
@@ -1505,5 +1557,625 @@ body {
   font-size: 11px;
   color: #6b7280;
   min-width: 80px;
+}
+
+@keyframes vinyl-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes vinyl-float {
+  0% {
+    transform: translateY(0);
+  }
+
+  100% {
+    transform: translateY(-32px);
+  }
+}
+
+.music-bokeh-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+  animation: bgFadeIn 0.7s both;
+}
+
+.bokeh {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.32;
+  filter: blur(24px) brightness(1.1);
+  animation: bokeh-float 18s infinite alternate ease-in-out;
+  mix-blend-mode: lighten;
+  transition: opacity 0.4s, filter 0.4s;
+  animation-fill-mode: both;
+  will-change: transform, opacity;
+}
+
+.bokeh1 {
+  width: 240px;
+  height: 240px;
+  background: #a78bfa;
+  top: 12vh;
+  left: 8vw;
+  animation-delay: 0s;
+}
+
+.bokeh2 {
+  width: 160px;
+  height: 160px;
+  background: #c4b5fd;
+  top: 60vh;
+  left: 70vw;
+  animation-delay: 3s;
+}
+
+.bokeh3 {
+  width: 200px;
+  height: 200px;
+  background: #ede9fe;
+  top: 35vh;
+  left: 45vw;
+  animation-delay: 7s;
+}
+
+.bokeh4 {
+  width: 120px;
+  height: 120px;
+  background: #a5b4fc;
+  top: 25vh;
+  left: 18vw;
+  animation-delay: 9s;
+}
+
+.bokeh5 {
+  width: 180px;
+  height: 180px;
+  background: #f3e8ff;
+  top: 55vh;
+  left: 80vw;
+  animation-delay: 12s;
+}
+
+.bokeh6 {
+  width: 260px;
+  height: 260px;
+  background: #e0e7ff;
+  top: 5vh;
+  left: 60vw;
+  animation-delay: 15s;
+}
+
+@keyframes bokeh-float {
+  0% {
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-32px) scale(1.08) rotate(8deg);
+  }
+
+  100% {
+    transform: translateY(-64px) scale(1.13) rotate(-8deg);
+  }
+}
+
+@keyframes bgFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.vinyl-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 2;
+  overflow: hidden;
+  animation: bgFadeIn 0.7s both;
+}
+
+.vinyl {
+  position: absolute;
+  opacity: 0.18;
+  animation: vinyl-spin 16s linear infinite, vinyl-float 10s infinite alternate;
+  filter: drop-shadow(0 4px 24px #a78bfa44);
+  animation-fill-mode: both;
+  will-change: transform, opacity;
+}
+
+.vinyl1 {
+  top: 8vh;
+  left: 6vw;
+  width: 140px;
+  height: 140px;
+  animation-duration: 22s;
+}
+
+.vinyl2 {
+  bottom: 10vh;
+  right: 10vw;
+  width: 100px;
+  height: 100px;
+  animation-duration: 16s;
+}
+
+.vinyl3 {
+  left: 80vw;
+  top: 12vh;
+  width: 110px;
+  height: 110px;
+  opacity: 0.11;
+  animation-delay: 2s;
+}
+
+@keyframes vinyl-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes vinyl-float {
+  0% {
+    transform: translateY(0);
+  }
+
+  100% {
+    transform: translateY(-32px);
+  }
+}
+
+.music-shapes-bg,
+.extra-bg-shapes {
+  position: fixed;
+  width: 100vw;
+  height: 100vh;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  z-index: 3;
+  overflow: hidden;
+  animation: bgFadeIn 0.7s both;
+}
+
+.music-shape,
+.shape {
+  position: absolute;
+  opacity: 0.38;
+  filter: blur(0.2px);
+  animation: float-shape 14s infinite alternate ease-in-out;
+  animation-fill-mode: both;
+  will-change: transform, opacity;
+}
+
+.note1 {
+  left: 14vw;
+  top: 32vh;
+  width: 54px;
+  height: 54px;
+  animation-delay: 0s;
+}
+
+.star1 {
+  left: 82vw;
+  top: 62vh;
+  width: 38px;
+  height: 38px;
+  animation-delay: 3s;
+}
+
+.wave1 {
+  left: 52vw;
+  top: 14vh;
+  width: 120px;
+  height: 32px;
+  animation-delay: 6s;
+}
+
+.note2 {
+  left: 22vw;
+  top: 72vh;
+  width: 40px;
+  height: 40px;
+  animation-delay: 4s;
+}
+
+.star2 {
+  left: 62vw;
+  top: 27vh;
+  width: 34px;
+  height: 34px;
+  animation-delay: 7s;
+}
+
+.wave2 {
+  left: 12vw;
+  top: 82vh;
+  width: 90px;
+  height: 24px;
+  animation-delay: 9s;
+}
+
+@keyframes float-shape {
+  0% {
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-36px) scale(1.12) rotate(10deg);
+  }
+
+  100% {
+    transform: translateY(-70px) scale(1.07) rotate(-8deg);
+  }
+}
+
+.sparkle1,
+.sparkle2 {
+  opacity: 0.7;
+  animation: sparkle 2.2s infinite alternate;
+  animation-fill-mode: both;
+  will-change: transform, opacity;
+}
+
+.sparkle1 {
+  left: 38vw;
+  top: 18vh;
+  width: 28px;
+  height: 28px;
+  animation: sparkle 2.5s infinite alternate;
+}
+
+.sparkle2 {
+  left: 78vw;
+  top: 82vh;
+  width: 18px;
+  height: 18px;
+  animation: sparkle 3.2s infinite alternate;
+}
+
+@keyframes sparkle {
+
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.18) rotate(10deg);
+  }
+}
+
+.bottom-waves-bg {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 180px;
+  z-index: 4;
+  pointer-events: none;
+  overflow: hidden;
+  animation: bgFadeIn 0.7s both;
+  background: none;
+}
+
+.wave-svg {
+  width: 100vw;
+  height: 180px;
+  display: block;
+  filter: blur(2.5px) brightness(1.08) drop-shadow(0 12px 48px #a78bfa88) drop-shadow(0 0px 32px #c4b5fd55);
+  animation: waveParallax 8s cubic-bezier(.4, 0, .2, 1) infinite alternate;
+  animation-fill-mode: both;
+  will-change: transform;
+  opacity: 1;
+  mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0.7) 60%, rgba(0, 0, 0, 0.01) 100%);
+}
+
+.wave-svg path:nth-child(1) {
+  fill: url(#prettyWaveGradient);
+  opacity: 0.92;
+  filter: drop-shadow(0 8px 32px #a78bfa55) blur(1px);
+}
+
+.wave-svg path:nth-child(2) {
+  fill: #c4b5fd;
+  opacity: 0.22;
+  filter: blur(2px);
+}
+
+.wave-svg path:nth-child(3) {
+  fill: #a78bfa;
+  opacity: 0.13;
+  filter: blur(3px);
+}
+
+@keyframes waveParallax {
+  0% {
+    transform: translateY(0) scaleX(1);
+  }
+
+  100% {
+    transform: translateY(-18px) scaleX(1.04);
+  }
+}
+
+.darkmode-toggle {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(255, 255, 255, 0.85);
+  border: none;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  transition: background 0.2s;
+}
+
+.darkmode-toggle:hover {
+  background: #ede9fe;
+}
+
+.darkmode-toggle svg {
+  color: #6d28d9;
+  width: 26px;
+  height: 26px;
+  transition: color 0.2s;
+}
+
+.dark-mode .darkmode-toggle {
+  background: #232136;
+}
+
+.dark-mode .darkmode-toggle svg {
+  color: #c4b5fd;
+}
+
+.dark-mode,
+.swipe-container.dark-mode {
+  background: linear-gradient(135deg, #181825 0%, #312e81 100%) !important;
+  color: #e0e7ff !important;
+}
+
+/* ENHANCED DARK MODE FOR BACKGROUND ELEMENTS */
+.dark-mode .music-bokeh-bg,
+.dark-mode .vinyl-bg,
+.dark-mode .music-shapes-bg,
+.dark-mode .extra-bg-shapes,
+.dark-mode .bottom-waves-bg {
+  opacity: 1 !important;
+  z-index: 5 !important;
+  filter: none !important;
+  visibility: visible !important;
+  display: block !important;
+}
+
+/* Bokeh elements - bigger, brighter, more visible */
+.dark-mode .bokeh {
+  opacity: 0.8 !important;
+  filter: blur(20px) brightness(1.5) !important;
+  mix-blend-mode: screen !important;
+  transform-origin: center !important;
+  animation-duration: 28s !important;
+}
+
+.dark-mode .bokeh1 {
+  background: #9333ea !important;
+  width: 350px !important;
+  height: 350px !important;
+  box-shadow: 0 0 60px #9333eacc !important;
+}
+
+.dark-mode .bokeh2 {
+  background: #4f46e5 !important;
+  width: 280px !important;
+  height: 280px !important;
+  box-shadow: 0 0 50px #4f46e5cc !important;
+}
+
+.dark-mode .bokeh3 {
+  background: #6d28d9 !important;
+  width: 320px !important;
+  height: 320px !important;
+  box-shadow: 0 0 55px #6d28d9cc !important;
+}
+
+.dark-mode .bokeh4 {
+  background: #8b5cf6 !important;
+  width: 250px !important;
+  height: 250px !important;
+  box-shadow: 0 0 45px #8b5cf6cc !important;
+}
+
+.dark-mode .bokeh5 {
+  background: #c084fc !important;
+  width: 300px !important;
+  height: 300px !important;
+  box-shadow: 0 0 55px #c084fccc !important;
+}
+
+.dark-mode .bokeh6 {
+  background: #a855f7 !important;
+  width: 330px !important;
+  height: 330px !important;
+  box-shadow: 0 0 50px #a855f7cc !important;
+}
+
+/* Vinyl records - more visible with glow effects */
+.dark-mode .vinyl {
+  opacity: 0.85 !important;
+  filter: none !important;
+  mix-blend-mode: screen !important;
+}
+
+.dark-mode .vinyl1 circle:first-child {
+  fill: #1e1b4b !important;
+  stroke: #c084fc !important;
+  stroke-width: 4 !important;
+  filter: drop-shadow(0 0 15px #c084fc) !important;
+}
+
+.dark-mode .vinyl2 circle:first-child {
+  fill: #312e81 !important;
+  stroke: #8b5cf6 !important;
+  stroke-width: 4 !important;
+  filter: drop-shadow(0 0 15px #8b5cf6) !important;
+}
+
+.dark-mode .vinyl3 circle:first-child {
+  fill: #4c1d95 !important;
+  stroke: #f472b6 !important;
+  stroke-width: 4 !important;
+  filter: drop-shadow(0 0 15px #f472b6) !important;
+}
+
+.dark-mode .vinyl1 circle:nth-child(2),
+.dark-mode .vinyl2 circle:nth-child(2),
+.dark-mode .vinyl3 circle:nth-child(2) {
+  fill: rgba(139, 92, 246, 0.8) !important;
+}
+
+.dark-mode .vinyl1 circle:last-child,
+.dark-mode .vinyl2 circle:last-child,
+.dark-mode .vinyl3 circle:last-child {
+  fill: #f9fafb !important;
+}
+
+/* Music shapes - vibrant colors with glow effects */
+.dark-mode .music-shape,
+.dark-mode .shape {
+  opacity: 0.85 !important;
+  filter: none !important;
+  mix-blend-mode: screen !important;
+}
+
+.dark-mode .music-shape.note1 path {
+  fill: #c084fc !important;
+  filter: drop-shadow(0 0 10px #c084fc) !important;
+}
+
+.dark-mode .music-shape.star1 polygon {
+  fill: #60a5fa !important;
+  filter: drop-shadow(0 0 10px #60a5fa) !important;
+}
+
+.dark-mode .music-shape.wave1 path {
+  stroke: #f0f9ff !important;
+  stroke-width: 3px !important;
+  filter: drop-shadow(0 0 10px #f0f9ff) !important;
+}
+
+.dark-mode .shape.note2 path {
+  fill: #fb7185 !important;
+  filter: drop-shadow(0 0 10px #fb7185) !important;
+}
+
+.dark-mode .shape.star2 polygon {
+  fill: #fcd34d !important;
+  filter: drop-shadow(0 0 10px #fcd34d) !important;
+}
+
+.dark-mode .shape.wave2 path {
+  stroke: #fb7185 !important;
+  stroke-width: 3px !important;
+  filter: drop-shadow(0 0 10px #fb7185) !important;
+}
+
+/* Sparkles - brighter with animation */
+.dark-mode .sparkle1 circle,
+.dark-mode .sparkle2 circle {
+  fill: #f9fafb !important;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.9)) !important;
+}
+
+.dark-mode .sparkle1 g,
+.dark-mode .sparkle2 g {
+  stroke: #fcd34d !important;
+  stroke-width: 2px !important;
+  filter: drop-shadow(0 0 5px #fcd34d) !important;
+}
+
+.dark-mode .sparkle1 {
+  animation: dark-sparkle 3s infinite alternate !important;
+}
+
+.dark-mode .sparkle2 {
+  animation: dark-sparkle 4s infinite alternate-reverse !important;
+}
+
+@keyframes dark-sparkle {
+
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.3) rotate(20deg);
+    filter: drop-shadow(0 0 15px white);
+  }
+}
+
+/* Bottom waves - enhanced visibility */
+.dark-mode .wave-svg {
+  opacity: 1 !important;
+  filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.4)) !important;
+}
+
+.dark-mode #prettyWaveGradient stop:first-child {
+  stop-color: #8b5cf6 !important;
+  stop-opacity: 0.9 !important;
+}
+
+.dark-mode #prettyWaveGradient stop:nth-child(2) {
+  stop-color: #7c3aed !important;
+  stop-opacity: 0.7 !important;
+}
+
+.dark-mode #prettyWaveGradient stop:last-child {
+  stop-color: #6d28d9 !important;
+  stop-opacity: 0.5 !important;
+}
+
+.dark-mode .wave-svg path:nth-child(2) {
+  fill: #6366f1 !important;
+  opacity: 0.4 !important;
+}
+
+.dark-mode .wave-svg path:nth-child(3) {
+  fill: #a78bfa !important;
+  opacity: 0.3 !important;
 }
 </style>
