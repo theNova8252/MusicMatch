@@ -1,4 +1,85 @@
 <template>
+  <div class="vinyl-bg">
+    <svg class="vinyl vinyl1" viewBox="0 0 60 60">
+      <circle cx="30" cy="30" r="28" class="vinyl-outer" />
+      <circle cx="30" cy="30" r="10" class="vinyl-outer" />
+      <circle cx="30" cy="30" r="3" class="vinyl-outer" />
+    </svg>
+    <svg class="vinyl vinyl2" viewBox="0 0 60 60">
+      <circle cx="30" cy="30" r="28" class="vinyl-outer" />
+      <circle cx="30" cy="30" r="10" class="vinyl-outer" />
+      <circle cx="30" cy="30" r="3" class="vinyl-outer" />
+    </svg>
+  </div>
+  <div class="music-bokeh-bg">
+    <div class="bokeh bokeh1"></div>
+    <div class="bokeh bokeh2"></div>
+    <div class="bokeh bokeh3"></div>
+    <div class="bokeh bokeh4"></div>
+    <div class="bokeh bokeh5"></div>
+    <div class="bokeh bokeh6"></div>
+  </div>
+  <div class="music-shapes-bg">
+    <svg class="music-shape note1" viewBox="0 0 32 32">
+      <path d="M24 4v16.5a6 6 0 1 1-2-4.5V8h-8V20.5a6 6 0 1 1-2-4.5V4h12z" fill="#c4b5fd" opacity="0.7" />
+    </svg>
+    <svg class="music-shape star1" viewBox="0 0 32 32">
+      <polygon points="16,3 19,13 29,13 21,19 24,29 16,23 8,29 11,19 3,13 13,13" fill="#a78bfa" opacity="0.5" />
+    </svg>
+    <svg class="music-shape wave1" viewBox="0 0 64 16">
+      <path d="M0 8 Q8 0 16 8 T32 8 T48 8 T64 8" stroke="#ede9fe" stroke-width="2" fill="none" opacity="0.7" />
+    </svg>
+  </div>
+  <div class="extra-bg-shapes">
+    <svg class="shape vinyl3" viewBox="0 0 60 60">
+      <circle cx="30" cy="30" r="28" fill="#fff" stroke="#f472b6" stroke-width="4" />
+      <circle cx="30" cy="30" r="10" fill="#f472b6" />
+      <circle cx="30" cy="30" r="3" fill="#fff" />
+    </svg>
+    <svg class="shape note2" viewBox="0 0 32 32">
+      <path d="M24 4v16.5a6 6 0 1 1-2-4.5V8h-8V20.5a6 6 0 1 1-2-4.5V4h12z" fill="#f472b6" opacity="0.5" />
+    </svg>
+    <svg class="shape star2" viewBox="0 0 32 32">
+      <polygon points="16,3 19,13 29,13 21,19 24,29 16,23 8,29 11,19 3,13 13,13" fill="#fbbf24" opacity="0.4" />
+    </svg>
+    <svg class="shape sparkle1" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="2" fill="#fff" opacity="0.7" />
+      <g stroke="#fbbf24" stroke-width="1.5" opacity="0.7">
+        <line x1="12" y1="2" x2="12" y2="6" />
+        <line x1="12" y1="18" x2="12" y2="22" />
+        <line x1="2" y1="12" x2="6" y2="12" />
+        <line x1="18" y1="12" x2="22" y2="12" />
+      </g>
+    </svg>
+    <svg class="shape sparkle2" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="1.2" fill="#fff" opacity="0.5" />
+      <g stroke="#a78bfa" stroke-width="1" opacity="0.5">
+        <line x1="12" y1="4" x2="12" y2="8" />
+        <line x1="12" y1="16" x2="12" y2="20" />
+        <line x1="4" y1="12" x2="8" y2="12" />
+        <line x1="16" y1="12" x2="20" y2="12" />
+      </g>
+    </svg>
+    <svg class="shape wave2" viewBox="0 0 64 16">
+      <path d="M0 8 Q8 0 16 8 T32 8 T48 8 T64 8" stroke="#f472b6" stroke-width="2" fill="none" opacity="0.5" />
+    </svg>
+  </div>
+
+
+  <div class="bottom-waves-bg">
+    <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg" class="wave-svg">
+      <defs>
+        <linearGradient id="prettyWaveGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ede9fe" stop-opacity="0.95" />
+          <stop offset="60%" stop-color="#c4b5fd" stop-opacity="0.7" />
+          <stop offset="100%" stop-color="#a78bfa" stop-opacity="0.5" />
+        </linearGradient>
+      </defs>
+      <path fill="url(#prettyWaveGradient)" fill-opacity="1" d="M0,80 C360,120 1080,40 1440,80 L1440,120 L0,120 Z" />
+      <path fill="#c4b5fd" fill-opacity="0.35" d="M0,100 C480,60 960,140 1440,100 L1440,120 L0,120 Z" />
+      <path fill="#a78bfa" fill-opacity="0.18" d="M0,110 C600,90 900,130 1440,110 L1440,120 L0,120 Z" />
+    </svg>
+  </div>
   <div class="swipe-container" :class="{ 'dark-mode': isDarkMode }">
     <button class="back-button" @click="navigateToDashboard">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -16,7 +97,7 @@
       </svg>
       <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
         stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 A7 7 0 0 0 21 12.79z" />
       </svg>
     </button>
 
@@ -229,7 +310,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
-                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                  <path d="M16 11.37A4 4 0 1 1 12.63 8 A4 4 0 0 1 16 11.37z"></path>
                   <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
                 </svg>
                 <h3>Social Media</h3>
@@ -284,87 +365,7 @@
     <MatchPopup :visible="showMatchPopup" :matchedUser="matchedUser" :currentUser="currentUser"
       :sharedMusic="sharedMusic" @close="showMatchPopup = false" />
   </div>
-  <div class="vinyl-bg">
-    <svg class="vinyl vinyl1" viewBox="0 0 60 60">
-      <circle cx="30" cy="30" r="28" fill="#fff" stroke="#6d28d9" stroke-width="4" />
-      <circle cx="30" cy="30" r="10" fill="#6d28d9" />
-      <circle cx="30" cy="30" r="3" fill="#fff" />
-    </svg>
-    <svg class="vinyl vinyl2" viewBox="0 0 60 60">
-      <circle cx="30" cy="30" r="28" fill="#fff" stroke="#8b5cf6" stroke-width="4" />
-      <circle cx="30" cy="30" r="10" fill="#8b5cf6" />
-      <circle cx="30" cy="30" r="3" fill="#fff" />
-    </svg>
-  </div>
-  <div class="music-bokeh-bg">
-    <div class="bokeh bokeh1"></div>
-    <div class="bokeh bokeh2"></div>
-    <div class="bokeh bokeh3"></div>
-    <div class="bokeh bokeh4"></div>
-    <div class="bokeh bokeh5"></div>
-    <div class="bokeh bokeh6"></div>
-  </div>
-  <div class="music-shapes-bg">
-    <svg class="music-shape note1" viewBox="0 0 32 32">
-      <path d="M24 4v16.5a6 6 0 1 1-2-4.5V8h-8V20.5a6 6 0 1 1-2-4.5V4h12z" fill="#c4b5fd" opacity="0.7" />
-    </svg>
-    <svg class="music-shape star1" viewBox="0 0 32 32">
-      <polygon points="16,3 19,13 29,13 21,19 24,29 16,23 8,29 11,19 3,13 13,13" fill="#a78bfa" opacity="0.5" />
-    </svg>
-    <svg class="music-shape wave1" viewBox="0 0 64 16">
-      <path d="M0 8 Q8 0 16 8 T32 8 T48 8 T64 8" stroke="#ede9fe" stroke-width="2" fill="none" opacity="0.7" />
-    </svg>
-  </div>
-  <div class="extra-bg-shapes">
-    <svg class="shape vinyl3" viewBox="0 0 60 60">
-      <circle cx="30" cy="30" r="28" fill="#fff" stroke="#f472b6" stroke-width="4" />
-      <circle cx="30" cy="30" r="10" fill="#f472b6" />
-      <circle cx="30" cy="30" r="3" fill="#fff" />
-    </svg>
-    <svg class="shape note2" viewBox="0 0 32 32">
-      <path d="M24 4v16.5a6 6 0 1 1-2-4.5V8h-8V20.5a6 6 0 1 1-2-4.5V4h12z" fill="#f472b6" opacity="0.5" />
-    </svg>
-    <svg class="shape star2" viewBox="0 0 32 32">
-      <polygon points="16,3 19,13 29,13 21,19 24,29 16,23 8,29 11,19 3,13 13,13" fill="#fbbf24" opacity="0.4" />
-    </svg>
-    <svg class="shape sparkle1" viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="2" fill="#fff" opacity="0.7" />
-      <g stroke="#fbbf24" stroke-width="1.5" opacity="0.7">
-        <line x1="12" y1="2" x2="12" y2="6" />
-        <line x1="12" y1="18" x2="12" y2="22" />
-        <line x1="2" y1="12" x2="6" y2="12" />
-        <line x1="18" y1="12" x2="22" y2="12" />
-      </g>
-    </svg>
-    <svg class="shape sparkle2" viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="1.2" fill="#fff" opacity="0.5" />
-      <g stroke="#a78bfa" stroke-width="1" opacity="0.5">
-        <line x1="12" y1="4" x2="12" y2="8" />
-        <line x1="12" y1="16" x2="12" y2="20" />
-        <line x1="4" y1="12" x2="8" y2="12" />
-        <line x1="16" y1="12" x2="20" y2="12" />
-      </g>
-    </svg>
-    <svg class="shape wave2" viewBox="0 0 64 16">
-      <path d="M0 8 Q8 0 16 8 T32 8 T48 8 T64 8" stroke="#f472b6" stroke-width="2" fill="none" opacity="0.5" />
-    </svg>
-  </div>
 
-
-  <div class="bottom-waves-bg">
-    <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg" class="wave-svg">
-      <defs>
-        <linearGradient id="prettyWaveGradient" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#ede9fe" stop-opacity="0.95" />
-          <stop offset="60%" stop-color="#c4b5fd" stop-opacity="0.7" />
-          <stop offset="100%" stop-color="#a78bfa" stop-opacity="0.5" />
-        </linearGradient>
-      </defs>
-      <path fill="url(#prettyWaveGradient)" fill-opacity="1" d="M0,80 C360,120 1080,40 1440,80 L1440,120 L0,120 Z" />
-      <path fill="#c4b5fd" fill-opacity="0.35" d="M0,100 C480,60 960,140 1440,100 L1440,120 L0,120 Z" />
-      <path fill="#a78bfa" fill-opacity="0.18" d="M0,110 C600,90 900,130 1440,110 L1440,120 L0,120 Z" />
-    </svg>
-  </div>
 </template>
 
 <script>
@@ -691,9 +692,23 @@ export default {
     toggleDarkMode() {
       this.isDarkMode = !this.isDarkMode;
       document.documentElement.classList.toggle('dark-mode', this.isDarkMode);
-    },
+      localStorage.setItem('musicmatch-darkmode', this.isDarkMode ? '1' : '0');
+      this.$q.notify({
+        message: this.isDarkMode ? 'Dark mode activated' : 'Light mode activated',
+        color: this.isDarkMode ? 'dark' : 'light',
+        position: 'top',
+      });
+    }
   },
   mounted() {
+    const savedDark = localStorage.getItem('musicmatch-darkmode');
+    if (savedDark === '1') {
+      this.isDarkMode = true;
+      document.documentElement.classList.add('dark-mode');
+    } else {
+      this.isDarkMode = false;
+      document.documentElement.classList.remove('dark-mode');
+    }
     this.fetchCurrentUser();
     if (this.user && this.user.id && socket) {
       socket.emit('register', this.user.id);
@@ -756,7 +771,7 @@ body {
   overflow: hidden;
   padding: 0 20px;
   position: relative;
-  z-index: 10;
+  ;
 }
 
 .back-button {
@@ -817,6 +832,37 @@ body {
   transform-style: preserve-3d;
   display: flex;
   flex-direction: column;
+}
+
+body:not(.dark-mode) .music-shape path {
+  fill: #c4b5fd;
+  opacity: 0.7;
+  filter: none;
+}
+
+body:not(.dark-mode) .music-shape polygon {
+  fill: #a78bfa;
+  opacity: 0.5;
+}
+
+body:not(.dark-mode) .music-shape path.wave1 {
+  stroke: #ede9fe;
+  stroke-width: 2;
+}
+
+/* Light mode fallback styles */
+.music-shape path,
+.shape path {
+  fill: #6d28d9;
+  opacity: 0.7;
+  stroke: none;
+  filter: none;
+}
+
+.shape polygon {
+  fill: #facc15;
+  /* bright yellow */
+  opacity: 0.6;
 }
 
 .card-image {
@@ -928,6 +974,16 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.vinyl-outer {
+  fill: #fff;
+  stroke: #6d28d9;
+}
+
+body.dark-mode .vinyl-outer {
+  fill: #312e81;
+  stroke: #c084fc;
 }
 
 .music-match-header h3 {
@@ -1579,6 +1635,16 @@ body {
   }
 }
 
+.music-bokeh-bg,
+.vinyl-bg,
+.music-shapes-bg,
+.extra-bg-shapes,
+.bottom-waves-bg {
+  visibility: visible !important;
+  display: block !important;
+  z-index: 1 !important;
+}
+
 .music-bokeh-bg {
   position: fixed;
   top: 0;
@@ -1877,7 +1943,7 @@ body {
   bottom: 0;
   width: 100vw;
   height: 180px;
-  z-index: 4;
+  z-index: 1;
   pointer-events: none;
   overflow: hidden;
   animation: bgFadeIn 0.7s both;
@@ -1967,170 +2033,167 @@ body {
   color: #e0e7ff !important;
 }
 
-/* ENHANCED DARK MODE FOR BACKGROUND ELEMENTS */
-.dark-mode .music-bokeh-bg,
-.dark-mode .vinyl-bg,
-.dark-mode .music-shapes-bg,
-.dark-mode .extra-bg-shapes,
-.dark-mode .bottom-waves-bg {
+body.dark-mode .bokeh {
   opacity: 1 !important;
-  z-index: 5 !important;
-  filter: none !important;
-  visibility: visible !important;
-  display: block !important;
-}
-
-/* Bokeh elements - bigger, brighter, more visible */
-.dark-mode .bokeh {
-  opacity: 0.8 !important;
-  filter: blur(20px) brightness(1.5) !important;
+  filter: blur(32px) brightness(1.8) !important;
   mix-blend-mode: screen !important;
-  transform-origin: center !important;
-  animation-duration: 28s !important;
+}
+.dark-mode .track-title {
+  color: #fef3c7 !important;
+  /* Light yellow for high contrast */
+  font-weight: 700;
 }
 
-.dark-mode .bokeh1 {
+.dark-mode .track-artist {
+  color: #e0e7ff !important;
+  /* Light blue/white for contrast */
+}
+/* ENHANCED DARK MODE FOR BACKGROUND ELEMENTS - DISTINCT COLORS */
+body.dark-mode .bokeh1 {
   background: #9333ea !important;
-  width: 350px !important;
-  height: 350px !important;
-  box-shadow: 0 0 60px #9333eacc !important;
+  box-shadow: 0 0 60px #9333ea99 !important;
 }
 
-.dark-mode .bokeh2 {
+body.dark-mode .bokeh2 {
   background: #4f46e5 !important;
-  width: 280px !important;
-  height: 280px !important;
-  box-shadow: 0 0 50px #4f46e5cc !important;
+  box-shadow: 0 0 50px #4f46e599 !important;
 }
 
-.dark-mode .bokeh3 {
+body.dark-mode .bokeh3 {
   background: #6d28d9 !important;
-  width: 320px !important;
-  height: 320px !important;
-  box-shadow: 0 0 55px #6d28d9cc !important;
+  box-shadow: 0 0 55px #6d28d999 !important;
 }
 
-.dark-mode .bokeh4 {
+body.dark-mode .bokeh4 {
   background: #8b5cf6 !important;
-  width: 250px !important;
-  height: 250px !important;
-  box-shadow: 0 0 45px #8b5cf6cc !important;
+  box-shadow: 0 0 45px #8b5cf699 !important;
 }
 
-.dark-mode .bokeh5 {
-  background: #c084fc !important;
-  width: 300px !important;
-  height: 300px !important;
-  box-shadow: 0 0 55px #c084fccc !important;
+body.dark-mode .bokeh5 {
+  background: #f472b6 !important;
+  box-shadow: 0 0 55px #f472b699 !important;
 }
 
-.dark-mode .bokeh6 {
-  background: #a855f7 !important;
-  width: 330px !important;
-  height: 330px !important;
-  box-shadow: 0 0 50px #a855f7cc !important;
+body.dark-mode .bokeh6 {
+  background: #fbbf24 !important;
+  box-shadow: 0 0 50px #fbbf2499 !important;
 }
 
-/* Vinyl records - more visible with glow effects */
-.dark-mode .vinyl {
-  opacity: 0.85 !important;
-  filter: none !important;
-  mix-blend-mode: screen !important;
-}
-
-.dark-mode .vinyl1 circle:first-child {
+body.dark-mode .vinyl1 circle:first-child,
+body.dark-mode .vinyl2 circle:first-child,
+body.dark-mode .vinyl3 circle:first-child {
   fill: #1e1b4b !important;
-  stroke: #c084fc !important;
-  stroke-width: 4 !important;
-  filter: drop-shadow(0 0 15px #c084fc) !important;
-}
-
-.dark-mode .vinyl2 circle:first-child {
-  fill: #312e81 !important;
   stroke: #8b5cf6 !important;
-  stroke-width: 4 !important;
-  filter: drop-shadow(0 0 15px #8b5cf6) !important;
+  filter: drop-shadow(0 0 12px #8b5cf655) !important;
 }
 
-.dark-mode .vinyl3 circle:first-child {
-  fill: #4c1d95 !important;
-  stroke: #f472b6 !important;
-  stroke-width: 4 !important;
-  filter: drop-shadow(0 0 15px #f472b6) !important;
+body.dark-mode .vinyl1 circle:nth-child(2),
+body.dark-mode .vinyl2 circle:nth-child(2),
+body.dark-mode .vinyl3 circle:nth-child(2) {
+  fill: #6d28d9 !important;
+  filter: drop-shadow(0 0 10px #6d28d955) !important;
 }
 
-.dark-mode .vinyl1 circle:nth-child(2),
-.dark-mode .vinyl2 circle:nth-child(2),
-.dark-mode .vinyl3 circle:nth-child(2) {
-  fill: rgba(139, 92, 246, 0.8) !important;
-}
-
-.dark-mode .vinyl1 circle:last-child,
-.dark-mode .vinyl2 circle:last-child,
-.dark-mode .vinyl3 circle:last-child {
+body.dark-mode .vinyl1 circle:last-child,
+body.dark-mode .vinyl2 circle:last-child,
+body.dark-mode .vinyl3 circle:last-child {
   fill: #f9fafb !important;
 }
 
-/* Music shapes - vibrant colors with glow effects */
-.dark-mode .music-shape,
-.dark-mode .shape {
-  opacity: 0.85 !important;
-  filter: none !important;
-  mix-blend-mode: screen !important;
+body.dark-mode .music-shape path,
+body.dark-mode .shape path,
+body.dark-mode .shape polygon {
+  opacity: 1 !important;
+  /* override inline opacity */
+  fill-opacity: 1 !important;
+  stroke-opacity: 1 !important;
+  filter: drop-shadow(0 0 10px #c084fc) !important;
 }
 
-.dark-mode .music-shape.note1 path {
+/* If needed: make note1 especially glow */
+body.dark-mode .note1 path {
+  fill: #c084fc !important;
+  filter: drop-shadow(0 0 12px #c084fcaa) !important;
+  opacity: 1 !important;
+}
+
+@keyframes pulseNote {
+
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 8px #c084fc88);
+  }
+
+  50% {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 18px #c084fcaa);
+  }
+}
+
+body.dark-mode .note1 {
+  animation: pulseNote 4s infinite ease-in-out !important;
+}
+
+body.dark-mode .music-shape.note1 path {
   fill: #c084fc !important;
   filter: drop-shadow(0 0 10px #c084fc) !important;
 }
 
-.dark-mode .music-shape.star1 polygon {
+body.dark-mode .music-shape.star1 polygon {
   fill: #60a5fa !important;
   filter: drop-shadow(0 0 10px #60a5fa) !important;
 }
 
-.dark-mode .music-shape.wave1 path {
+body.dark-mode .music-shape.wave1 path {
   stroke: #f0f9ff !important;
   stroke-width: 3px !important;
   filter: drop-shadow(0 0 10px #f0f9ff) !important;
 }
 
-.dark-mode .shape.note2 path {
+body.dark-mode .shape.note2 path {
   fill: #fb7185 !important;
   filter: drop-shadow(0 0 10px #fb7185) !important;
 }
 
-.dark-mode .shape.star2 polygon {
+body.dark-mode .shape.star2 polygon {
   fill: #fcd34d !important;
   filter: drop-shadow(0 0 10px #fcd34d) !important;
 }
 
-.dark-mode .shape.wave2 path {
+body.dark-mode .shape.wave2 path {
   stroke: #fb7185 !important;
   stroke-width: 3px !important;
   filter: drop-shadow(0 0 10px #fb7185) !important;
 }
 
-/* Sparkles - brighter with animation */
-.dark-mode .sparkle1 circle,
-.dark-mode .sparkle2 circle {
+body.dark-mode .sparkle1 circle,
+body.dark-mode .sparkle2 circle {
   fill: #f9fafb !important;
-  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.9)) !important;
+  filter: drop-shadow(0 0 8px #fff9) !important;
 }
 
-.dark-mode .sparkle1 g,
-.dark-mode .sparkle2 g {
+body.dark-mode .sparkle1 g,
+body.dark-mode .sparkle2 g {
   stroke: #fcd34d !important;
   stroke-width: 2px !important;
   filter: drop-shadow(0 0 5px #fcd34d) !important;
 }
 
-.dark-mode .sparkle1 {
-  animation: dark-sparkle 3s infinite alternate !important;
-}
-
-.dark-mode .sparkle2 {
-  animation: dark-sparkle 4s infinite alternate-reverse !important;
+body.dark-mode .music-bokeh-bg,
+body.dark-mode .vinyl-bg,
+body.dark-mode .music-shapes-bg,
+body.dark-mode .extra-bg-shapes,
+body.dark-mode .bottom-waves-bg,
+body.dark-mode .bokeh,
+body.dark-mode .vinyl,
+body.dark-mode .music-shape,
+body.dark-mode .shape {
+  opacity: 1 !important;
+  z-index: 0 !important;
+  filter: none !important;
+  visibility: visible !important;
+  display: block !important;
 }
 
 @keyframes dark-sparkle {
@@ -2149,33 +2212,390 @@ body {
 }
 
 /* Bottom waves - enhanced visibility */
-.dark-mode .wave-svg {
+/* Enhanced Dark Mode Styling */
+.dark-mode .card-inner {
+  background: linear-gradient(145deg, #232136, #2a273f) !important;
+  box-shadow: 0 20px 40px rgba(26, 24, 58, 0.6),
+    0 0 0 1px rgba(139, 92, 246, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+  border-radius: 26px !important;
+}
+
+.dark-mode .card-image {
+  box-shadow: inset 0 -10px 20px rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.dark-mode .card-content {
+  background: linear-gradient(to bottom, #232136, #1d1b2e) !important;
+  scrollbar-color: #6d28d9 #312e81;
+}
+
+.dark-mode .card-content::-webkit-scrollbar-track {
+  background: #312e81;
+}
+
+.dark-mode .card-content::-webkit-scrollbar-thumb {
+  background: #6d28d9;
+  border-radius: 10px;
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
+}
+
+.dark-mode .user-header {
+  border-bottom: 1px solid rgba(139, 92, 246, 0.15);
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+
+.dark-mode .user-name {
+  color: #f0f9ff !important;
+  text-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
+}
+
+.dark-mode .user-age {
+  color: #c4b5fd !important;
+}
+
+.dark-mode .user-bio {
+  color: #cbd5e1 !important;
+}
+
+.dark-mode .music-match-section {
+  background: linear-gradient(120deg, #312e81, #4c1d95) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.dark-mode .music-section {
+  background: linear-gradient(to right, #1e1b4b, #312e81) !important;
+  border-left: 3px solid #8b5cf6 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 6px 12px -4px rgba(0, 0, 0, 0.25) !important;
+}
+
+.dark-mode .section-header h3 {
+  color: #fef3c7 !important;
+  text-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
+  letter-spacing: 0.5px;
+}
+
+.dark-mode .match-percentage {
+  color: #fef3c7 !important;
+  font-weight: 800;
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+}
+
+.dark-mode .artist-item,
+.dark-mode .track-item {
+  background: linear-gradient(145deg, #2a273f, #232136) !important;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(139, 92, 246, 0.1) !important;
+}
+
+.dark-mode .artist-avatar {
+  background: linear-gradient(145deg, #8b5cf6, #7c3aed) !important;
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.4);
+}
+
+.dark-mode .genre-chip {
+  background: linear-gradient(145deg, #3730a3, #4338ca) !important;
+  color: #fef3c7 !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(139, 92, 246, 0.2) !important;
+  border-radius: 20px;
+  padding: 5px 14px;
+  transform: translateY(0);
+  transition: all 0.2s ease;
+}
+
+.dark-mode .genre-chip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(139, 92, 246, 0.3) !important;
+}
+
+.dark-mode .match-badge {
+  background: linear-gradient(120deg, #4c1d95, #6d28d9) !important;
+  color: #fef3c7 !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.dark-mode .action-button {
+  background: linear-gradient(135deg, #4c1d95, #6d28d9) !important;
+  border: 2px solid #a78bfa !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(139, 92, 246, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark-mode .action-button:hover {
+  transform: translateY(-8px) scale(1.08);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(139, 92, 246, 0.3),
+    0 0 20px rgba(139, 92, 246, 0.4) !important;
+}
+
+.dark-mode .action-button.reject {
+  background: linear-gradient(135deg, #9d174d, #db2777) !important;
+  border: 2px solid #fb7185 !important;
+}
+
+.dark-mode .action-button.reject:hover {
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(251, 113, 133, 0.3),
+    0 0 20px rgba(251, 113, 133, 0.4) !important;
+}
+
+.dark-mode .action-button.like {
+  background: linear-gradient(135deg, #4f46e5, #6d28d9) !important;
+  border: 2px solid #a78bfa !important;
+}
+
+.dark-mode .action-button.like:hover {
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(167, 139, 250, 0.3),
+    0 0 20px rgba(167, 139, 250, 0.4) !important;
+}
+
+.dark-mode .action-button svg {
+  color: #fef3c7 !important;
+  filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.5));
+}
+
+.dark-mode .currently-playing {
+  background: linear-gradient(to right, #064e3b, #065f46) !important;
+  border-left: 3px solid #10b981 !important;
+}
+
+.dark-mode .recently-played {
+  background: linear-gradient(to right, #4c1d95, #5b21b6) !important;
+  border-left: 3px solid #8b5cf6 !important;
+}
+
+.dark-mode .current-track,
+.dark-mode .track-item {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.dark-mode .playing-animation span {
+  background-color: #10b981 !important;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+}
+
+/* Enhanced glow effects for backgrounds in dark mode */
+body.dark-mode .vinyl {
+  opacity: 0.25 !important;
+  filter: drop-shadow(0 0 25px rgba(139, 92, 246, 0.6)) brightness(1.2) !important;
+}
+
+body.dark-mode .sparkle1,
+body.dark-mode .sparkle2 {
+  animation: dark-sparkle 4s infinite ease-in-out !important;
   opacity: 1 !important;
-  filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.4)) !important;
 }
 
-.dark-mode #prettyWaveGradient stop:first-child {
-  stop-color: #8b5cf6 !important;
-  stop-opacity: 0.9 !important;
+/* Enhanced glow when hovering over buttons in dark mode */
+.dark-mode .back-button:hover,
+.dark-mode .darkmode-toggle:hover {
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.5) !important;
 }
 
-.dark-mode #prettyWaveGradient stop:nth-child(2) {
-  stop-color: #7c3aed !important;
-  stop-opacity: 0.7 !important;
+/* Add this to the end of your stylesheet */
+/* Fix container sizing and structure consistency between modes */
+.swipe-container,
+body.dark-mode .swipe-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 0 20px;
+  position: relative;
+  box-sizing: border-box;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.dark-mode #prettyWaveGradient stop:last-child {
-  stop-color: #6d28d9 !important;
-  stop-opacity: 0.5 !important;
+/* Ensure card dimensions are identical in both modes */
+.card-stack,
+body.dark-mode .card-stack {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  height: 650px;
+  margin-bottom: 20px;
+  margin-top: 60px;
 }
 
-.dark-mode .wave-svg path:nth-child(2) {
-  fill: #6366f1 !important;
-  opacity: 0.4 !important;
+/* Fix card structure (keep identical in both modes) */
+.swipe-card,
+body.dark-mode .swipe-card {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.3s ease, opacity 0.2s ease;
+  will-change: transform;
 }
 
-.dark-mode .wave-svg path:nth-child(3) {
-  fill: #a78bfa !important;
-  opacity: 0.3 !important;
+.card-inner,
+body.dark-mode .card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Consistent button positioning */
+.action-buttons,
+body.dark-mode .action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 36px;
+  margin-top: 32px;
+  margin-bottom: 32px;
+  z-index: 10;
+  position: relative;
+}
+
+/* Fix section layouts to be identical */
+.card-image,
+body.dark-mode .card-image {
+  width: 100%;
+  height: 40%;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+.card-content,
+body.dark-mode .card-content {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Fix music sections to maintain consistent structure */
+.music-section,
+body.dark-mode .music-section,
+.music-match-section,
+body.dark-mode .music-match-section {
+  padding: 12px;
+  border-radius: 12px;
+  margin-bottom: 4px;
+}
+
+/* Consistent typography structure */
+.user-header,
+body.dark-mode .user-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.user-name,
+body.dark-mode .user-name {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.user-age,
+body.dark-mode .user-age {
+  font-size: 24px;
+  font-weight: 500;
+}
+
+/* Ensure background animations appear the same structurally */
+.music-bokeh-bg,
+.vinyl-bg,
+.music-shapes-bg,
+.extra-bg-shapes,
+.bottom-waves-bg,
+body.dark-mode .music-bokeh-bg,
+body.dark-mode .vinyl-bg,
+body.dark-mode .music-shapes-bg,
+body.dark-mode .extra-bg-shapes,
+body.dark-mode .bottom-waves-bg {
+  visibility: visible !important;
+  display: block !important;
+  z-index: 1 !important;
+  position: fixed;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Consistent responsive behavior */
+@media (max-width: 768px) {
+
+  .card-stack,
+  body.dark-mode .card-stack {
+    max-width: 340px;
+    height: 600px;
+  }
+
+  .action-button,
+  body.dark-mode .action-button {
+    width: 56px;
+    height: 56px;
+  }
+}
+
+@media (max-width: 480px) {
+
+  .card-stack,
+  body.dark-mode .card-stack {
+    max-width: 300px;
+    height: 550px;
+    margin-top: 40px;
+  }
+
+  .card-image,
+  body.dark-mode .card-image {
+    height: 35%;
+  }
+
+  .card-content,
+  body.dark-mode .card-content {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .action-button,
+  body.dark-mode .action-button {
+    width: 50px;
+    height: 50px;
+  }
+}
+
+/* Fix element transitions between modes */
+.swipe-container,
+.card-inner,
+.card-content,
+.music-section,
+.genre-chip,
+.artist-item,
+.track-item,
+.action-button,
+.user-name,
+.user-bio {
+  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, border 0.3s ease;
 }
 </style>
