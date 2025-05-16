@@ -691,8 +691,15 @@ export default {
     },
     toggleDarkMode() {
       this.isDarkMode = !this.isDarkMode;
+
+      // Apply dark mode class to both document elements
       document.documentElement.classList.toggle('dark-mode', this.isDarkMode);
+      document.body.classList.toggle('dark-mode', this.isDarkMode);
+
+      // Save preference to localStorage
       localStorage.setItem('musicmatch-darkmode', this.isDarkMode ? '1' : '0');
+
+      // Notify user
       this.$q.notify({
         message: this.isDarkMode ? 'Dark mode activated' : 'Light mode activated',
         color: this.isDarkMode ? 'dark' : 'light',
@@ -701,14 +708,14 @@ export default {
     }
   },
   mounted() {
+    // Check localStorage for dark mode preference and apply it immediately
     const savedDark = localStorage.getItem('musicmatch-darkmode');
-    if (savedDark === '1') {
-      this.isDarkMode = true;
-      document.documentElement.classList.add('dark-mode');
-    } else {
-      this.isDarkMode = false;
-      document.documentElement.classList.remove('dark-mode');
-    }
+    this.isDarkMode = savedDark === '1';
+
+    // Apply dark mode to both document elements
+    document.documentElement.classList.toggle('dark-mode', this.isDarkMode);
+    document.body.classList.toggle('dark-mode', this.isDarkMode);
+
     this.fetchCurrentUser();
     if (this.user && this.user.id && socket) {
       socket.emit('register', this.user.id);
@@ -2038,6 +2045,7 @@ body.dark-mode .bokeh {
   filter: blur(32px) brightness(1.8) !important;
   mix-blend-mode: screen !important;
 }
+
 .dark-mode .track-title {
   color: #fef3c7 !important;
   /* Light yellow for high contrast */
@@ -2048,6 +2056,7 @@ body.dark-mode .bokeh {
   color: #e0e7ff !important;
   /* Light blue/white for contrast */
 }
+
 /* ENHANCED DARK MODE FOR BACKGROUND ELEMENTS - DISTINCT COLORS */
 body.dark-mode .bokeh1 {
   background: #9333ea !important;
@@ -2100,6 +2109,166 @@ body.dark-mode .vinyl3 circle:last-child {
   fill: #f9fafb !important;
 }
 
+/* Fix for SVG glow effects in dark mode to prevent square artifacts */
+body.dark-mode .music-shape path,
+body.dark-mode .shape path,
+body.dark-mode .shape polygon {
+  opacity: 1 !important;
+  fill-opacity: 1 !important;
+  stroke-opacity: 1 !important;
+  filter: none !important;
+  /* Remove the square-causing filter */
+}
+
+/* Apply proper glow to individual elements using box-shadow and proper filter techniques */
+body.dark-mode .music-shape,
+body.dark-mode .shape {
+  filter: none !important;
+  /* Remove all filters */
+  isolation: isolate;
+  /* Prevent visual leaking */
+  overflow: visible;
+  /* Allow glow to extend outside shape */
+  position: relative;
+  /* For proper positioning */
+}
+body.dark-mode .music-shape::after,
+body.dark-mode .shape::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  /* Expand beyond the shape */
+  border-radius: 50%;
+  z-index: -1;
+  background: radial-gradient(circle, rgba(192, 132, 252, 0.4) 0%, rgba(192, 132, 252, 0) 70%);
+  opacity: 0.6;
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+
+body.dark-mode .note1 {
+  filter: drop-shadow(0 0 12px rgba(192, 132, 252, 0.7)) !important;
+  animation: pulseNote 4s infinite ease-in-out !important;
+}
+
+body.dark-mode .star1 {
+  filter: drop-shadow(0 0 10px rgba(96, 165, 250, 0.7)) !important;
+}
+
+body.dark-mode .wave1 {
+  filter: drop-shadow(0 0 8px rgba(240, 249, 255, 0.7)) !important;
+}
+
+body.dark-mode .note2 {
+  filter: drop-shadow(0 0 10px rgba(251, 113, 133, 0.7)) !important;
+}
+
+body.dark-mode .star2 {
+  filter: drop-shadow(0 0 10px rgba(252, 211, 77, 0.7)) !important;
+}
+
+body.dark-mode .wave2 {
+  filter: drop-shadow(0 0 8px rgba(251, 113, 133, 0.7)) !important;
+}
+
+/* Improved sparkle glow effect */
+body.dark-mode .sparkle1,
+body.dark-mode .sparkle2 {
+  filter: none !important;
+  position: relative;
+  isolation: isolate;
+}
+body.dark-mode .sparkle1::after,
+body.dark-mode .sparkle2::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0) 70%);
+  z-index: -1;
+  opacity: 0.7;
+}
+/* Fix for shapes with specific fill/stroke settings */
+body.dark-mode .music-shape.note1 path {
+  fill: #c084fc !important;
+}
+
+body.dark-mode .music-shape.star1 polygon {
+  fill: #60a5fa !important;
+}
+
+body.dark-mode .music-shape.wave1 path {
+  stroke: #f0f9ff !important;
+  stroke-width: 3px !important;
+  fill: none !important;
+}
+
+body.dark-mode .shape.note2 path {
+  fill: #fb7185 !important;
+}
+
+body.dark-mode .shape.star2 polygon {
+  fill: #fcd34d !important;
+}
+
+body.dark-mode .shape.wave2 path {
+  stroke: #fb7185 !important;
+  stroke-width: 3px !important;
+  fill: none !important;
+}
+
+/* Improved animation for note pulsing */
+@keyframes pulseNote {
+
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+    filter: drop-shadow(0 0 8px rgba(192, 132, 252, 0.5));
+  }
+
+  50% {
+    transform: scale(1.1) rotate(5deg);
+    filter: drop-shadow(0 0 15px rgba(192, 132, 252, 0.8));
+  }
+}
+
+/* Fix for dark sparkle animation */
+@keyframes dark-sparkle {
+
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1) rotate(0deg);
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.6));
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.3) rotate(20deg);
+    filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.9));
+  }
+}
+
+/* Make sure vinyl elements look circular and have proper glow */
+body.dark-mode .vinyl {
+  opacity: 0.25 !important;
+  filter: drop-shadow(0 0 20px rgba(139, 92, 246, 0.5)) brightness(1.2) !important;
+}
+
+/* Override any other settings that might cause square artifacts */
+body.dark-mode .music-bokeh-bg,
+body.dark-mode .vinyl-bg,
+body.dark-mode .music-shapes-bg,
+body.dark-mode .extra-bg-shapes,
+body.dark-mode .bottom-waves-bg {
+  opacity: 1 !important;
+  z-index: 0 !important;
+  filter: none !important;
+  visibility: visible !important;
+  display: block !important;
+}
+
+/* Enhanced glow effects for backgrounds in dark mode */
 body.dark-mode .music-shape path,
 body.dark-mode .shape path,
 body.dark-mode .shape polygon {
@@ -2111,11 +2280,15 @@ body.dark-mode .shape polygon {
 }
 
 /* If needed: make note1 especially glow */
-body.dark-mode .note1 path {
-  fill: #c084fc !important;
-  filter: drop-shadow(0 0 12px #c084fcaa) !important;
-  opacity: 1 !important;
+body.dark-mode .note1 path,
+body.dark-mode .note2 path,
+body.dark-mode .star1 polygon,
+body.dark-mode .star2 polygon,
+body.dark-mode .wave1 path,
+body.dark-mode .wave2 path {
+  filter: none !important;
 }
+
 
 @keyframes pulseNote {
 

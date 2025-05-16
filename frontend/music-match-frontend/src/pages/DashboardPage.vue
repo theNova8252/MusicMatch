@@ -9,6 +9,10 @@
         <q-btn flat round color="primary" icon="logout" @click="logout">
           <q-tooltip>Sign Out</q-tooltip>
         </q-btn>
+        <!-- Add inside your .nav-bar div -->
+        <q-btn flat round :icon="isDarkMode ? 'dark_mode' : 'light_mode'" @click="toggleDarkMode" color="white">
+          <q-tooltip>{{ isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode' }}</q-tooltip>
+        </q-btn>
       </div>
       <div class="profile-header q-mb-lg">
         <div class="profile-header-content">
@@ -407,6 +411,28 @@ import { useQuasar } from 'quasar';
 import axios from 'axios';
 
 const $q = useQuasar();
+const isDarkMode = ref(false);
+
+function toggleDarkMode() {
+  isDarkMode.value = !isDarkMode.value;
+  document.documentElement.classList.toggle('dark-mode', isDarkMode.value);
+  document.body.classList.toggle('dark-mode', isDarkMode.value);
+  localStorage.setItem('musicmatch-darkmode', isDarkMode.value ? '1' : '0');
+
+  // Notify the user about mode change
+  $q.notify({
+    message: isDarkMode.value ? 'Dark mode activated' : 'Light mode activated',
+    color: isDarkMode.value ? 'dark' : 'light',
+    position: 'top',
+  });
+}
+
+onMounted(() => {
+  const savedDark = localStorage.getItem('musicmatch-darkmode');
+  isDarkMode.value = savedDark === '1';
+  document.documentElement.classList.toggle('dark-mode', isDarkMode.value);
+  document.body.classList.toggle('dark-mode', isDarkMode.value);
+});
 
 const artistImageMap = {
   'Billie Eilish': 'billie.jpg',
@@ -851,7 +877,7 @@ async function uploadProfileImage(event) {
 
 onMounted(() => {
   fetchUserProfile();
-  setInterval(fetchUserProfile, 10000); 
+  setInterval(fetchUserProfile, 10000);
 });
 
 </script>
@@ -1036,6 +1062,7 @@ onMounted(() => {
     margin-top: 16px;
   }
 }
+
 .currently-playing {
   background-color: white;
   border-radius: 12px;
@@ -1105,5 +1132,237 @@ onMounted(() => {
   50% {
     height: 20px;
   }
+}
+
+/* Add at the end of your style block */
+/* Dark Mode Variables and Base Styles */
+:root.dark-mode,
+.dark-mode {
+  --bg-main: #181825;
+  --bg-gradient: linear-gradient(135deg, #181825 0%, #312e81 100%);
+  --bg-card: #232136;
+  --bg-card-hover: #2a273f;
+  --text-main: #e0e7ff;
+  --text-secondary: #a5b4fc;
+  --text-highlight: #fef3c7;
+  --accent: #8b5cf6;
+  --accent-light: #a78bfa;
+  --accent-glow: rgba(139, 92, 246, 0.4);
+  --border: rgba(139, 92, 246, 0.2);
+}
+
+/* Main Page Background */
+.dark-mode .profile-page {
+  background: var(--bg-gradient) !important;
+}
+
+/* Header Area Background */
+.dark-mode .blur-bg {
+  background: linear-gradient(135deg, #4c1d95 0%, #312e81 100%) !important;
+  opacity: 0.8;
+}
+
+/* Card Containers */
+.dark-mode .profile-header,
+.dark-mode .profile-card,
+.dark-mode .currently-playing {
+  background: linear-gradient(145deg, #232136, #2a273f) !important;
+  color: var(--text-main) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3),
+    0 0 0 1px var(--border),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+  border-radius: 16px !important;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dark-mode .profile-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(139, 92, 246, 0.3),
+    0 0 20px rgba(139, 92, 246, 0.2) !important;
+}
+
+/* Avatar Styling */
+.dark-mode .profile-avatar {
+  border: 4px solid var(--bg-card) !important;
+  box-shadow: 0 0 0 2px var(--accent-light),
+    0 8px 24px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Text Colors */
+.dark-mode .text-weight-bold,
+.dark-mode .text-h6,
+.dark-mode .text-subtitle2,
+.dark-mode h2,
+.dark-mode h3,
+.dark-mode h4,
+.dark-mode h5,
+.dark-mode h6,
+.dark-mode .q-item-label,
+.dark-mode .nav-bar,
+.dark-mode .section-header h5,
+.dark-mode .artist-name {
+  color: var(--text-main) !important;
+}
+
+.dark-mode .text-grey-8,
+.dark-mode .text-caption {
+  color: var(--text-secondary) !important;
+}
+
+/* Input Fields */
+.dark-mode .q-input,
+.dark-mode .q-field__control,
+.dark-mode .q-field__native {
+  background-color: rgba(30, 27, 75, 0.7) !important;
+  color: var(--text-main) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px;
+}
+
+.dark-mode .q-field__label {
+  color: var(--text-secondary) !important;
+}
+
+/* Artists Bubbles */
+.dark-mode .artist-bubble {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border: 2px solid var(--bg-card);
+}
+
+.dark-mode .artist-bubble:hover {
+  box-shadow: 0 0 0 2px var(--accent-light),
+    0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* Artist Grid Styling */
+.dark-mode .artist-grid {
+  gap: 20px;
+}
+
+.dark-mode .artist-item {
+  background: linear-gradient(145deg, #232136, #2a273f) !important;
+  border-radius: 12px;
+  padding: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dark-mode .artist-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3),
+    0 0 0 1px var(--accent-light) !important;
+}
+
+.dark-mode .artist-img {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.dark-mode .artist-add-btn {
+  background: var(--accent) !important;
+  color: white !important;
+}
+
+/* Empty States */
+.dark-mode .empty-state {
+  background-color: rgba(30, 27, 75, 0.3) !important;
+  border: 1px solid var(--border);
+  color: var(--text-secondary) !important;
+}
+
+.dark-mode .empty-state .q-icon {
+  color: var(--accent-light) !important;
+}
+
+/* Buttons */
+.dark-mode .q-btn {
+  border-radius: 8px;
+}
+
+.dark-mode .q-btn.q-btn--standard {
+  background: linear-gradient(135deg, #4c1d95, #6d28d9) !important;
+  color: white !important;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark-mode .q-btn.q-btn--flat {
+  color: var(--accent-light) !important;
+}
+
+/* Chips */
+.dark-mode .q-chip {
+  background: linear-gradient(145deg, #3730a3, #4338ca) !important;
+  color: white !important;
+  border: none !important;
+}
+
+/* Lists and Items */
+.dark-mode .q-list {
+  background: transparent !important;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.dark-mode .q-item {
+  color: var(--text-main) !important;
+  border-bottom: 1px solid var(--border);
+}
+
+.dark-mode .q-item:last-child {
+  border-bottom: none;
+}
+
+/* Track List Styling */
+.dark-mode .track-item {
+  background: linear-gradient(145deg, #232136, #2a273f) !important;
+  border: 1px solid var(--border);
+  border-radius: 8px !important;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+/* Sound Wave Animation */
+.dark-mode .sound-bar {
+  background-color: var(--accent) !important;
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+/* Dialog Styling */
+.dark-mode .q-dialog__inner>div {
+  background: linear-gradient(145deg, #232136, #2a273f) !important;
+  color: var(--text-main) !important;
+  border: 1px solid var(--border);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Scrollbars */
+.dark-mode ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark-mode ::-webkit-scrollbar-track {
+  background: #1e1b4b;
+  border-radius: 8px;
+}
+
+.dark-mode ::-webkit-scrollbar-thumb {
+  background: #6d28d9;
+  border-radius: 8px;
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
+}
+
+/* Transitions */
+.dark-mode .profile-header,
+.dark-mode .profile-card,
+.dark-mode .currently-playing,
+.dark-mode .track-item,
+.dark-mode .artist-item,
+.dark-mode .q-btn,
+.dark-mode .q-chip,
+.dark-mode .empty-state {
+  transition: all 0.3s ease;
 }
 </style>

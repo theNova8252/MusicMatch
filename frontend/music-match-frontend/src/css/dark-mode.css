@@ -1,0 +1,70 @@
+/* Global Dark Mode Settings */
+:root {
+  --light-bg: linear-gradient(135deg, #f5f7fa 0%, #ede9fe 100%);
+  --dark-bg: linear-gradient(135deg, #181825 0%, #312e81 100%);
+  --light-text: #333;
+  --dark-text: #e0e7ff;
+  --light-card-bg: #fff;
+  --dark-card-bg: #232136;
+  --light-accent: #6d28d9;
+  --dark-accent: #a78bfa;
+  --transition-time: 0.3s;
+}
+
+/* Default Light Theme */
+body {
+  background: var(--light-bg);
+  color: var(--light-text);
+  transition:
+    background var(--transition-time) ease,
+    color var(--transition-time) ease;
+}
+
+/* Dark Theme */
+body.dark-mode {
+  background: var(--dark-bg) !important;
+  color: var(--dark-text) !important;
+}
+
+html.dark-mode {
+  background: var(--dark-bg) !important;
+}
+
+/* Component containers */
+.dark-mode .q-page,
+.dark-mode .q-layout,
+.dark-mode .q-page-container {
+  background: transparent !important;
+}
+
+/* Ensure dark mode cards */
+body.dark-mode .q-card {
+  background: var(--dark-card-bg);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* Form elements */
+body.dark-mode .q-field__native,
+body.dark-mode .q-field__input {
+  color: var(--dark-text);
+}
+
+/* Ensure good transitions between states */
+.q-page,
+.q-layout,
+.q-page-container,
+.q-card,
+.q-field,
+.q-input,
+.q-btn {
+  transition:
+    background var(--transition-time) ease,
+    color var(--transition-time) ease,
+    box-shadow var(--transition-time) ease,
+    border var(--transition-time) ease;
+}
+
+/* Fix z-index for darkmode toggles */
+.darkmode-toggle {
+  z-index: 9999;
+}
