@@ -1,55 +1,35 @@
-// ws/socketHandler.js
-import Message from '../models/Message.js';
 import { userSockets } from './socketStore.js';
+import Message from '../models/Message.js'; // <-- Add this import
 
-export function setupWebSocketHandlers(ws, userId) {
-  ws.on('message', async (msg) => {
-    try {
-      const parsed = JSON.parse(msg);
+export function setupWebSocketHandlers(io) {
+  io.on('connection', (socket) => {
+    socket.on('user_connected', (userId) => {
+      userSockets.set(userId, socket);
+      socket.userId = userId;
+    });
 
-      if (parsed.type === 'sendMessage') {
-        const { toUserId, content } = parsed;
+    socket.on('send_message', async (msg) => {
+      // msg: { senderId, receiverId, content }
+      // Save to DB
+      const saved = await Message.create({
+        senderId: msg.senderId,
+        receiverId: msg.receiverId,
+        content: msg.content,
+        timestamp: new Date(),
+      });
 
-        // Save message to DB
-        const saved = await Message.create({
-          senderId: userId,
-          receiverId: toUserId,
-          content,
-        });
-
-        // Send to receiver if online
-        const receiverSocket = userSockets.get(toUserId);
-        if (receiverSocket && receiverSocket.readyState === ws.OPEN) {
-          receiverSocket.send(
-            JSON.stringify({
-              type: 'receiveMessage',
-              message: {
-                id: saved.id,
-                content: saved.content,
-                senderId: saved.senderId,
-                receiverId: saved.receiverId,
-                timestamp: saved.createdAt,
-              },
-            }),
-          );
-        }
-
-        // Echo back to sender (optional)
-        ws.send(
-          JSON.stringify({
-            type: 'sentMessage',
-            message: {
-              id: saved.id,
-              content: saved.content,
-              senderId: saved.senderId,
-              receiverId: saved.receiverId,
-              timestamp: saved.createdAt,
-            },
-          }),
-        );
+      // Send to receiver and sender
+      const receiverSocket = userSockets.get(msg.receiverId);
+      if (receiverSocket) {
+        receiverSocket.emit('receive_message', saved);
       }
-    } catch (err) {
-      console.error('WebSocket message error:', err);
-    }
+      socket.emit('receive_message', saved);
+    });
+
+    socket.on('disconnect', () => {
+      if (socket.userId) {
+        userSockets.delete(socket.userId);
+      }
+    });
   });
 }

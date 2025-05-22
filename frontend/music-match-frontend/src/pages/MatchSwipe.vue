@@ -391,7 +391,8 @@ export default {
       seenUserIds: new Set(),
       sharedMusic: { artists: [], genres: [] },
       currentUser: {},
-      isDarkMode: false
+      isDarkMode: false,
+      lastSwipedUser: null,
     }
   },
   computed: {
@@ -625,10 +626,13 @@ export default {
     swipeRight() {
       if (this.filteredUsers.length === 0) return;
 
-      if (this.visibleUsers[this.activeCardIndex]) {
-        const userId = this.visibleUsers[this.activeCardIndex].id;
+      const swipedUser = this.visibleUsers[this.activeCardIndex];
+      if (swipedUser) {
+        this.lastSwipedUser = { ...swipedUser }; // keep a copy before removal
+        const userId = swipedUser.id;
         this.seenUserIds.add(userId);
         this.visibleUsers[this.activeCardIndex].direction = 'right';
+        // Call likeUser after setting lastSwipedUser
         this.likeUser(userId);
 
         setTimeout(() => {
@@ -652,36 +656,53 @@ export default {
         }
         const data = await res.json();
         if (data.mutualMatch) {
-          const matched = this.visibleUsers.find(u => u.id === userId);
-
-          if (!matched) {
-            console.error('❌ No matched user found at current index');
+          // Always show the popup here, regardless of socket event
+          if (!this.lastSwipedUser) {
+            console.error('❌ No last swiped user stored');
             return;
           }
-
           this.currentUser = this.getProcessedCurrentUser();
-          console.log("✅ currentUser:", this.currentUser);
-
           this.matchedUser = {
-            ...matched,
-            profileImage: this.getFullImageUrl(matched.profileImage)
+            ...this.lastSwipedUser,
+            profileImage: this.getFullImageUrl(this.lastSwipedUser.profileImage)
           };
-
-          this.sharedMusic = this.getSharedMusic(this.currentUser, matched);
+          this.sharedMusic = this.getSharedMusic(this.currentUser, this.lastSwipedUser);
           this.showMatchPopup = true;
+
+          // Optionally, emit a socket event to yourself for local dev
+          // socket.emit('mutualMatch', { user: this.matchedUser, sharedMusic: this.sharedMusic });
         }
       } catch (err) {
         console.error('Failed to like user:', err);
       }
     },
     getSharedMusic(currentUser, matchedUser) {
-      const sharedArtists = currentUser.favoriteArtists?.filter(artist =>
-        matchedUser.favoriteArtists?.includes(artist)
-      ) || [];
+      // Ensure both are arrays
+      const currentArtists = Array.isArray(currentUser.favoriteArtists)
+        ? currentUser.favoriteArtists
+        : (typeof currentUser.favoriteArtists === 'string'
+          ? currentUser.favoriteArtists.split(',').map(a => a.trim()).filter(Boolean)
+          : []);
+      const matchedArtists = Array.isArray(matchedUser.favoriteArtists)
+        ? matchedUser.favoriteArtists
+        : (typeof matchedUser.favoriteArtists === 'string'
+          ? matchedUser.favoriteArtists.split(',').map(a => a.trim()).filter(Boolean)
+          : []);
 
-      const sharedGenres = currentUser.favoriteGenres?.filter(genre =>
-        matchedUser.favoriteGenres?.includes(genre)
-      ) || [];
+      const sharedArtists = currentArtists.filter(artist =>
+        matchedArtists.includes(artist)
+      );
+
+      const currentGenres = Array.isArray(currentUser.favoriteGenres)
+        ? currentUser.favoriteGenres
+        : [];
+      const matchedGenres = Array.isArray(matchedUser.favoriteGenres)
+        ? matchedUser.favoriteGenres
+        : [];
+
+      const sharedGenres = currentGenres.filter(genre =>
+        matchedGenres.includes(genre)
+      );
 
       return { artists: sharedArtists, genres: sharedGenres };
     },
@@ -715,6 +736,20 @@ export default {
     // Apply dark mode to both document elements
     document.documentElement.classList.toggle('dark-mode', this.isDarkMode);
     document.body.classList.toggle('dark-mode', this.isDarkMode);
+    socket.emit('user_connected', this.currentUser.id);
+
+    // Listen for mutual-match events
+    if (socket) {
+      socket.off('mutualMatch'); // Prevent duplicate listeners
+      socket.on('mutualMatch', (data) => {
+        // Defensive: only show popup if not already open
+          this.matchedUser = data.user;
+          this.sharedMusic = data.sharedMusic || { artists: [], genres: [] };
+          this.showMatchPopup = true;
+          console.log('🔔 MatchPopup opened for match:', data);
+        
+      });
+    }
 
     this.fetchCurrentUser();
     if (this.user && this.user.id && socket) {
@@ -735,19 +770,7 @@ export default {
     this.fetchAllUsers();
     this.pollingInterval = setInterval(this.fetchAllUsers, 5000);
 
-    this.socket = new WebSocket('ws://localhost:5000');
-    this.socket.addEventListener('message', (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'mutualMatch') {
-          console.log('Mutual match detected:', data);
-          this.matchedUser = data.user;
-          this.showMatchPopup = true;
-        }
-      } catch (err) {
-        console.error('Error processing WebSocket message:', err);
-      }
-    });
+
   },
   beforeUnmount() {
     clearInterval(this.pollingInterval);
@@ -2132,6 +2155,7 @@ body.dark-mode .shape {
   position: relative;
   /* For proper positioning */
 }
+
 body.dark-mode .music-shape::after,
 body.dark-mode .shape::after {
   content: '';
@@ -2178,6 +2202,7 @@ body.dark-mode .sparkle2 {
   position: relative;
   isolation: isolate;
 }
+
 body.dark-mode .sparkle1::after,
 body.dark-mode .sparkle2::after {
   content: '';
@@ -2188,6 +2213,7 @@ body.dark-mode .sparkle2::after {
   z-index: -1;
   opacity: 0.7;
 }
+
 /* Fix for shapes with specific fill/stroke settings */
 body.dark-mode .music-shape.note1 path {
   fill: #c084fc !important;

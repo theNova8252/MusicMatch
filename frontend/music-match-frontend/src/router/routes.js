@@ -30,8 +30,8 @@ const routes = [
   },
   {
     path: '/chat/:partnerId',
-    component: () => import('pages/ChatView.vue'), 
-    props: true,
+    component: () => import('pages/ChatPage.vue'), 
+    props: false,
   },
 ]
 

@@ -11,7 +11,6 @@ import { Server } from 'socket.io';
 
 import sequelize from './config/db.js';
 import authRoutes from './routes/auth.js';
-import matchRoutes from './routes/match.js';
 import chatRoutes from './routes/chatRoutes.js';
 import userRoutes from './routes/User.js';
 
@@ -64,7 +63,6 @@ app.use('/uploads', express.static('uploads'));
 
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api/match', matchRoutes);
 app.use('/api/chat', chatRoutes);
 
 app.get('/', (req, res) => res.send('Music Match API is running!'));
@@ -72,34 +70,18 @@ app.get('/', (req, res) => res.send('Music Match API is running!'));
 // === HTTP + WebSocketServer (wss) ===
 const server = http.createServer(app);
 
-export const io = new Server(server, {
+const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: ['http://localhost:5173', 'http://localhost:9000'],
     methods: ['GET', 'POST'],
+    credentials: true,
   },
 });
 
-export const userSocketMap = new Map();
+app.set('io', io); 
+setupWebSocketHandlers(io);
 
-const wss = new WebSocketServer({ server });
-wss.on('connection', (ws, req) => {
-  sessionParser(req, {}, () => {
-    const userId = req.session?.userId;
-    if (userId) {
-      userSockets.set(userId, ws);
-      console.log(`User ${userId} connected via WebSocket`);
 
-      ws.on('close', () => {
-        userSockets.delete(userId);
-        console.log(`User ${userId} disconnected`);
-      });
-
-      setupWebSocketHandlers(ws, userId);
-    } else {
-      ws.close();
-    }
-  });
-});
 
 // === Sequelize Sync ===
 sequelize

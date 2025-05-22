@@ -1,5 +1,6 @@
 import { Model, DataTypes } from 'sequelize';
 import sequelize from '../config/db.js';
+import Message from './Message.js';
 
 class User extends Model {}
 
@@ -47,5 +48,6 @@ User.belongsToMany(User, {
   foreignKey: 'fromUserId',
   otherKey: 'toUserId',
 });
-
+User.hasMany(Message, { foreignKey: 'senderId', as: 'sentMessages' });
+User.hasMany(Message, { foreignKey: 'receiverId', as: 'receivedMessages' });
 export default User;

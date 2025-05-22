@@ -1,6 +1,8 @@
+// controllers/userController.js
+
 import UserLike from '../models/UserLike.js';
 import User from '../models/User.js';
-import { userSockets } from '../ws/socketStore.js';
+import { userSockets } from '../ws/socketStore.js'; // your Map<userId, WebSocket>
 import { notifyMatchByEmail } from './authController.js';
 
 export const likeUser = async (req, res) => {
@@ -12,8 +14,10 @@ export const likeUser = async (req, res) => {
   }
 
   try {
+    // record the like
     await UserLike.findOrCreate({ where: { fromUserId, toUserId } });
 
+    // check for mutual
     const mutual = await UserLike.findOne({
       where: {
         fromUserId: toUserId,
@@ -22,52 +26,39 @@ export const likeUser = async (req, res) => {
     });
 
     if (mutual) {
-      const fromUser = await User.findByPk(fromUserId);
-      const toUser = await User.findByPk(toUserId);
+      // fetch minimal user info
+      const [me, them] = await Promise.all([User.findByPk(fromUserId), User.findByPk(toUserId)]);
 
-      const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
-
-      const formatUserForSocket = (user) => ({
+      // helper to format for WS payload
+      const format = (user) => ({
         id: user.id,
         name: user.name,
-        profileImage: user.profileImage?.startsWith('http')
-          ? user.profileImage
-          : user.profileImage
-          ? `${baseUrl}${user.profileImage}`
-          : null,
-        compatibility: 36,
-        sharedGenres: user.sharedGenres || [],
-        sharedArtists: user.sharedArtists || [],
+        // ensure full URL for profileImage
+        profileImage:
+          user.profileImage && !user.profileImage.startsWith('http')
+            ? `${process.env.BASE_URL || 'http://localhost:5000'}${user.profileImage}`
+            : user.profileImage,
       });
 
-      const payloadForFrom = JSON.stringify({
-        type: 'mutualMatch',
-        user: formatUserForSocket(toUser),
-      });
+      const payloadForMe = JSON.stringify({ type: 'mutualMatch', user: format(them) });
+      const payloadForThem = JSON.stringify({ type: 'mutualMatch', user: format(me) });
 
-      const payloadForTo = JSON.stringify({
-        type: 'mutualMatch',
-        user: formatUserForSocket(fromUser),
-      });
+      // look up sockets
+      const sockMe = userSockets.get(me.id);
+      const sockThem = userSockets.get(them.id);
 
-      const fromSocket = userSockets.get(fromUserId);
-      const toSocket = userSockets.get(toUserId);
+      // send WebSocket message if connected
+      if (sockMe && sockMe.readyState === sockMe.OPEN) sockMe.send(payloadForMe);
+      if (sockThem && sockThem.readyState === sockThem.OPEN) sockThem.send(payloadForThem);
 
-      if (fromSocket && fromSocket.readyState === fromSocket.OPEN) {
-        fromSocket.send(payloadForFrom);
-      }
-
-      if (toSocket && toSocket.readyState === toSocket.OPEN) {
-        toSocket.send(payloadForTo);
-      }
-
-      await notifyMatchByEmail(fromUser, toUser);
-      await notifyMatchByEmail(toUser, fromUser);
+      // also fire off email notifications
+      await notifyMatchByEmail(me, them);
+      await notifyMatchByEmail(them, me);
     }
 
-    res.json({ success: true, mutualMatch: !!mutual });
+    return res.json({ success: true, mutualMatch: !!mutual });
   } catch (err) {
-    console.error('Like failed:', err);
-    res.status(500).json({ message: 'Failed to like user.' });
+    console.error('💥 likeUser error:', err);
+    return res.status(500).json({ message: 'Failed to like user.' });
   }
 };
