@@ -882,7 +882,7 @@ onMounted(() => {
 
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .profile-page {
   position: relative;
   min-height: 100vh;
@@ -1296,6 +1296,15 @@ onMounted(() => {
   background: linear-gradient(145deg, #3730a3, #4338ca) !important;
   color: white !important;
   border: none !important;
+}
+.dark-mode .q-card,
+.dark-mode .profile-card,
+.dark-mode .currently-playing {
+  background: linear-gradient(145deg, #232136, #2a273f) !important;
+  color: var(--text-main) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 0 0 1px var(--border), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+  transition: background 0.3s, color 0.3s;
 }
 
 /* Lists and Items */
