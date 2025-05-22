@@ -2797,4 +2797,152 @@ body.dark-mode .bottom-waves-bg {
 .user-bio {
   transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, border 0.3s ease;
 }
+
+@media (max-width: 600px) {
+  .swipe-container {
+    padding: 0 4px;
+    min-height: 100vh;
+    height: auto;
+  }
+
+
+  .card-stack {
+    max-width: 98vw;
+    height: 70vh;
+    margin-top: 24px;
+    margin-bottom: 12px;
+  } 
+  .back-button {
+     position: fixed;
+     top: 12px;
+     left: 12px;
+     right: auto;
+     z-index: 1100;
+     margin: 0;
+   }
+  
+   .darkmode-toggle {
+     position: fixed;
+     top: 60px;
+     left: 12px;
+     right: auto;
+     z-index: 1100;
+     margin: 0;
+   }
+
+  .swipe-card,
+  .card-inner {
+    border-radius: 14px;
+  }
+
+  .card-content {
+    padding: 10px;
+    gap: 8px;
+    font-size: 15px;
+  }
+
+  .user-header {
+    gap: 6px;
+  }
+
+  .user-name {
+    font-size: 18px;
+  }
+
+  .user-age {
+    font-size: 15px;
+  }
+
+  .music-section,
+  .music-match-section {
+    padding: 7px;
+    border-radius: 8px;
+  }
+
+  .action-buttons {
+    gap: 18px;
+    margin-top: 12px;
+    margin-bottom: 12px;
+  }
+
+  .action-button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .back-button,
+  .darkmode-toggle {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    padding: 4px 8px;
+    font-size: 12px;
+    width: 36px;
+    height: 36px;
+  }
+
+  .empty-state {
+    padding: 16px;
+  }
+
+  .card-image {
+    height: 32vw;
+    min-height: 120px;
+    max-height: 160px;
+  }
+}
+
+@media (max-width: 400px) {
+  .card-stack {
+    max-width: 99vw;
+    height: 60vh;
+  }
+
+  .card-content {
+    font-size: 13px;
+    padding: 6px;
+  }
+
+  .user-name {
+    font-size: 15px;
+  }
+
+  .action-button {
+    width: 36px;
+    height: 36px;
+  }
+}
+@media (max-width: 600px) {
+
+  .music-bokeh-bg .bokeh,
+  .vinyl-bg .vinyl,
+  .music-shapes-bg .music-shape,
+  .extra-bg-shapes .shape,
+  .bottom-waves-bg .wave-svg {
+    opacity: 0.18 !important;
+    filter: blur(12px) brightness(0.8) !important;
+  }
+
+  .music-bokeh-bg .bokeh4,
+  .music-bokeh-bg .bokeh5,
+  .music-bokeh-bg .bokeh6,
+  .music-shapes-bg .note1,
+  .music-shapes-bg .star1,
+  .music-shapes-bg .wave1,
+  .extra-bg-shapes .note2,
+  .extra-bg-shapes .star2,
+  .extra-bg-shapes .wave2,
+  .extra-bg-shapes .sparkle1,
+  .extra-bg-shapes .sparkle2 {
+    display: none !important;
+  }
+
+  .bottom-waves-bg {
+    height: 80px;
+  }
+
+  .wave-svg {
+    height: 80px;
+  }
+}
 </style>
