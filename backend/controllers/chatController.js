@@ -1,4 +1,5 @@
 // controllers/chatController.js
+import { Op } from 'sequelize';
 import Message from '../models/Message.js';
 
 export const sendMessage = async (req, res) => {

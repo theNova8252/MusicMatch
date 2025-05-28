@@ -1,22 +1,54 @@
-import { Model, DataTypes } from 'sequelize';
+// In your Message model file (models/Message.js)
+import { DataTypes } from 'sequelize';
 import sequelize from '../config/db.js';
-import User from './User.js';
 
-class Message extends Model {}
+const Message = sequelize.define('Message', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  content: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+  },
+  senderId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'Users',
+      key: 'id',
+    },
+  },
+  receiverId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'Users',
+      key: 'id',
+    },
+  },
+  createdAt: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+  },
+  updatedAt: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+  },
+});
 
-Message.init(
-  {
-    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-    senderId: { type: DataTypes.INTEGER, allowNull: false },
-    receiverId: { type: DataTypes.INTEGER, allowNull: false },
-    content: { type: DataTypes.TEXT, allowNull: false },
-    timestamp: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
-    // Optionally: read: { type: DataTypes.BOOLEAN, defaultValue: false }
-  },
-  {
-    sequelize,
-    modelName: 'Message',
-  },
-);
+// Define associations
+Message.associate = (models) => {
+  Message.belongsTo(models.User, {
+    foreignKey: 'senderId',
+    as: 'sender',
+  });
+
+  Message.belongsTo(models.User, {
+    foreignKey: 'receiverId',
+    as: 'receiver',
+  });
+};
 
 export default Message;

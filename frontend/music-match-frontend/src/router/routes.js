@@ -1,4 +1,6 @@
 // src/router/routes.js
+import ChatList from 'pages/ChatList.vue';
+import ChatPage from 'pages/ChatPage.vue';
 const routes = [
   {
     path: '/',
@@ -33,6 +35,23 @@ const routes = [
     component: () => import('pages/ChatPage.vue'), 
     props: false,
   },
+  {
+    path: '/chats',
+    name: 'ChatList',
+    component: ChatList,
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/chat/:partnerId',
+    name: 'ChatPage',
+    component: ChatPage,
+    props: true,
+    meta: {
+      requiresAuth: true,
+    },
+  }
 ]
 
 export default routes

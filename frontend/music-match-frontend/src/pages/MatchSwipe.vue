@@ -88,6 +88,13 @@
       </svg>
       <span>Dashboard</span>
     </button>
+    <button class="chat-button" @click="navigateToChats">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+      </svg>
+      <span>Chats</span>
+    </button>
     <button class="darkmode-toggle" @click="toggleDarkMode" :aria-pressed="isDarkMode">
       <svg v-if="!isDarkMode" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -585,6 +592,9 @@ export default {
     },
     navigateToDashboard() {
       this.$router.push('/dashboard');
+    },
+    navigateToChats(){
+      this.$router.push('/chats');
     },
     toggleBio(user) {
       if (user) {
@@ -2943,6 +2953,51 @@ body.dark-mode .bottom-waves-bg {
 
   .wave-svg {
     height: 80px;
+  }
+}
+.chat-button {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #6d28d9;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  z-index: 1000;
+}
+
+.chat-button:hover {
+  background-color: #6d28d9;
+  color: white;
+  transform: translateX(-50%) translateY(-2px);
+}
+
+.dark-mode .chat-button {
+  background: #232136;
+}
+
+.dark-mode .chat-button svg {
+  color: #c4b5fd;
+}
+
+@media (max-width: 600px) {
+  .chat-button {
+    top: 60px;
+    left: 12px;
+    right: auto;
+    transform: none;
+    z-index: 1100;
+    margin: 0;
   }
 }
 </style>
