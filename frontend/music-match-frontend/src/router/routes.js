@@ -1,6 +1,7 @@
 // src/router/routes.js
 import ChatList from 'pages/ChatList.vue';
 import ChatPage from 'pages/ChatPage.vue';
+
 const routes = [
   {
     path: '/',
@@ -8,32 +9,19 @@ const routes = [
   },
   {
     path: '/login',
-    component: () => import('pages/LoginPage.vue'), 
+    component: () => import('pages/LoginPage.vue'),
   },
   {
     path: '/dashboard',
-    component: () => import('pages/DashboardPage.vue'), 
-  },
-  {
-    path: '/:catchAll(.*)*',
-    component: () => import('pages/ErrorNotFound.vue'),
+    component: () => import('pages/DashboardPage.vue'),
   },
   {
     path: '/onboarding',
-    component: () => import('pages/OnboardingForm.vue'), 
-  },
-  {
-    path: '/:catchAll(.*)*',
-    redirect: '/login',
+    component: () => import('pages/OnboardingForm.vue'),
   },
   {
     path: '/swipe',
     component: () => import('pages/MatchSwipe.vue'),
-  },
-  {
-    path: '/chat/:partnerId',
-    component: () => import('pages/ChatPage.vue'), 
-    props: false,
   },
   {
     path: '/chats',
@@ -51,7 +39,11 @@ const routes = [
     meta: {
       requiresAuth: true,
     },
-  }
-]
+  },
+  {
+    path: '/:catchAll(.*)*',
+    component: () => import('pages/ErrorNotFound.vue'),
+  },
+];
 
-export default routes
+export default routes;

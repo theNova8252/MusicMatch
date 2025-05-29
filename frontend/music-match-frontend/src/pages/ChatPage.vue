@@ -26,6 +26,7 @@
 
       <div v-else-if="error" class="error">
         <p>Error: {{ error }}</p>
+        <p>{{ console.log('Route param (userId):', this.$route.params.userId) }}</p>
         <button @click="loadMessages">Retry</button>
       </div>
 
@@ -64,9 +65,9 @@ import axios from 'axios';
 
 export default {
   name: 'ChatPage',
+  props: ['partnerId'],
   data() {
     return {
-      otherUserId: null,
       otherUser: null,
       messages: [],
       currentUserId: null,
@@ -77,7 +78,6 @@ export default {
     };
   },
   async created() {
-    this.otherUserId = this.$route.params.userId;
     await this.loadCurrentUser();
     await this.loadOtherUser();
     await this.loadMessages();
@@ -85,132 +85,76 @@ export default {
   methods: {
     async loadCurrentUser() {
       try {
-        const response = await axios.get('http://localhost:5000/api/users/me', {
-          withCredentials: true
-        });
+        const res = await axios.get('http://localhost:5000/api/users/me', { withCredentials: true });
+        this.currentUserId = res.data?.user?.id || res.data?.id || null;
+      } catch (err) {
+  console.error(err);
+  this.error = 'Fehler beim Laden des aktuellen Benutzers';
+}
 
-        if (response.data.user) {
-          this.currentUserId = response.data.user.id;
-        } else if (response.data.id) {
-          this.currentUserId = response.data.id;
-        }
-
-        console.log('Current user ID:', this.currentUserId);
-      } catch (error) {
-        console.error('Error loading current user:', error);
-        this.error = 'Failed to load user information';
-      }
     },
 
     async loadOtherUser() {
       try {
-        const response = await axios.get(`http://localhost:5000/api/users/${this.otherUserId}`, {
+        const res = await axios.get(`http://localhost:5000/api/users/${this.partnerId}`, {
           withCredentials: true
         });
+        this.otherUser = res.data?.user || null;
+      } catch (err) {
+  console.error(err);
+  this.error = 'Fehler beim Laden des aktuellen Benutzers';
+}
 
-        if (response.data.user) {
-          this.otherUser = response.data.user;
-        }
-
-        console.log('Other user:', this.otherUser);
-      } catch (error) {
-        console.error('Error loading other user:', error);
-        this.error = 'Failed to load user information';
-      }
     },
 
     async loadMessages() {
       this.loading = true;
       this.error = null;
-
       try {
-        console.log('Loading messages between', this.currentUserId, 'and', this.otherUserId);
-
-        // You'll need to create this endpoint on your backend
-        const response = await axios.get(`http://localhost:5000/api/messages/${this.otherUserId}`, {
+        const res = await axios.get(`http://localhost:5000/api/messages/${this.partnerId}`, {
           withCredentials: true
         });
-
-        console.log('Messages response:', response.data);
-
-        if (response.data.messages && Array.isArray(response.data.messages)) {
-          this.messages = response.data.messages;
-          // Scroll to bottom after messages load
-          this.$nextTick(() => {
-            this.scrollToBottom();
-          });
-        } else {
-          this.messages = [];
-        }
-
-      } catch (error) {
-        console.error('Error loading messages:', error);
-
-        if (error.response) {
-          if (error.response.status === 401) {
-            this.error = 'Please log in to view messages';
-          } else if (error.response.status === 404) {
-            this.error = 'Conversation not found';
-          } else {
-            this.error = `Server error: ${error.response.status}`;
-          }
-        } else if (error.request) {
-          this.error = 'Network error. Please check your connection.';
-        } else {
-          this.error = 'An unexpected error occurred';
-        }
-
-        this.messages = [];
-      } finally {
+        this.messages = Array.isArray(res.data) ? res.data : [];
+        this.$nextTick(this.scrollToBottom);
+      } catch (err) {
+  console.error(err);
+  this.error = 'Fehler beim Laden des aktuellen Benutzers';
+}
+ finally {
         this.loading = false;
       }
     },
 
     async sendMessage() {
       if (!this.newMessage.trim() || this.sending) return;
-
       this.sending = true;
-      const messageContent = this.newMessage.trim();
+      const content = this.newMessage.trim();
       this.newMessage = '';
 
       try {
-        const response = await axios.post('http://localhost:5000/api/messages', {
-          receiverId: this.otherUserId,
-          content: messageContent
+        const res = await axios.post('http://localhost:5000/api/messages/send', {
+          receiverId: this.partnerId,
+          content
         }, {
           withCredentials: true
         });
 
-        console.log('Message sent:', response.data);
-
-        // Add the new message to the list
-        if (response.data.message) {
-          this.messages.push(response.data.message);
-          this.$nextTick(() => {
-            this.scrollToBottom();
-          });
+        if (res.data) {
+          this.messages.push(res.data);
+          this.$nextTick(this.scrollToBottom);
         }
-
-      } catch (error) {
-        console.error('Error sending message:', error);
-        // Restore the message in the input if sending failed
-        this.newMessage = messageContent;
-
-        if (error.response && error.response.status === 401) {
-          this.error = 'Please log in to send messages';
-        } else {
-          this.error = 'Failed to send message. Please try again.';
-        }
-      } finally {
+      } catch (err) {
+  console.error(err);
+  this.error = 'Fehler beim Laden des aktuellen Benutzers';
+}
+ finally {
         this.sending = false;
       }
     },
 
     scrollToBottom() {
-      const container = this.$refs.messagesContainer;
-      if (container) {
-        container.scrollTop = container.scrollHeight;
-      }
+      const el = this.$refs.messagesContainer;
+      if (el) el.scrollTop = el.scrollHeight;
     },
 
     goBack() {
@@ -224,20 +168,12 @@ export default {
 
     formatTime(timestamp) {
       if (!timestamp) return '';
-
-      const messageDate = new Date(timestamp);
-      const now = new Date();
-      const diffInHours = (now - messageDate) / (1000 * 60 * 60);
-
-      if (diffInHours < 1) {
-        return messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      } else if (diffInHours < 24) {
-        return messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      } else if (diffInHours < 168) { // Less than a week
-        return messageDate.toLocaleDateString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' });
-      } else {
-        return messageDate.toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-      }
+      const d = new Date(timestamp), now = new Date();
+      const diff = (now - d) / (1000 * 60 * 60);
+      if (diff < 1) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      if (diff < 24) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      if (diff < 168) return d.toLocaleDateString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+      return d.toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     }
   }
 };

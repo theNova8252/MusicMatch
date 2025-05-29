@@ -63,7 +63,7 @@ app.use('/uploads', express.static('uploads'));
 
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api/chat', chatRoutes);
+app.use('/api/messages', chatRoutes);
 
 app.get('/', (req, res) => res.send('Music Match API is running!'));
 
