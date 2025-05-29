@@ -15,7 +15,7 @@ import chatRoutes from './routes/chatRoutes.js';
 import userRoutes from './routes/User.js';
 
 import { userSockets } from './ws/socketStore.js';
-import { setupWebSocketHandlers } from './ws/socketHandler.js';
+import { setupWebSocket } from './ws/wsServer.js'
 
 import './models/UserLike.js';
 
@@ -64,6 +64,7 @@ app.use('/uploads', express.static('uploads'));
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/messages', chatRoutes);
+app.use('/api/chat', chatRoutes);
 
 app.get('/', (req, res) => res.send('Music Match API is running!'));
 
@@ -79,7 +80,7 @@ const io = new Server(server, {
 });
 
 app.set('io', io); 
-setupWebSocketHandlers(io);
+setupWebSocket(server);
 
 
 

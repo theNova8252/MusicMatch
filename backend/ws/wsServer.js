@@ -1,33 +1,65 @@
-import WebSocket from 'ws';
+import { WebSocketServer } from 'ws'; // Change this line
 import { userSockets } from './socketStore.js';
-import sessionMiddleware from '../middleware/session.js'; // <-- you need to share session
+import url from 'url';
 
 export function setupWebSocket(server) {
-  const wss = new WebSocket.Server({ noServer: true });
+  const wss = new WebSocketServer({ noServer: true }); // Change this line
 
   server.on('upgrade', (req, socket, head) => {
-    sessionMiddleware(req, {}, () => {
-      if (!req.session || !req.session.userId) {
-        socket.destroy();
-        return;
-      }
+    console.log('WebSocket upgrade attempt');
 
-      wss.handleUpgrade(req, socket, head, (ws) => {
-        wss.emit('connection', ws, req);
-      });
+    // For now, allow all connections and handle auth after connection
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      wss.emit('connection', ws, req);
     });
   });
 
   wss.on('connection', (ws, req) => {
-    const userId = req.session.userId;
-    console.log(`🔌 User ${userId} connected to WebSocket`);
+    console.log('🔌 WebSocket connection established');
 
-    // Store socket
-    userSockets.set(userId, ws);
+    let userId = null;
+    let isAuthenticated = false;
+
+    // Send connection request - client must send user ID
+    ws.send(
+      JSON.stringify({
+        type: 'auth-required',
+        message: 'Please authenticate',
+      }),
+    );
 
     ws.on('message', (message) => {
       try {
         const data = JSON.parse(message);
+        console.log('📨 WebSocket message received:', data);
+
+        // Handle authentication
+        if (data.type === 'authenticate' && data.userId) {
+          userId = data.userId.toString();
+          isAuthenticated = true;
+          userSockets.set(userId, ws);
+
+          ws.send(
+            JSON.stringify({
+              type: 'auth-success',
+              userId: userId,
+            }),
+          );
+
+          console.log(`✅ User ${userId} authenticated and connected`);
+          return;
+        }
+
+        // Require authentication for all other operations
+        if (!isAuthenticated) {
+          ws.send(
+            JSON.stringify({
+              type: 'auth-required',
+              message: 'Authentication required',
+            }),
+          );
+          return;
+        }
 
         if (data.type === 'send-message') {
           const { receiverId, content } = data;
@@ -35,38 +67,83 @@ export function setupWebSocket(server) {
           const newMessage = {
             id: Date.now().toString(),
             senderId: userId,
-            receiverId,
+            receiverId: receiverId.toString(),
             content,
             timestamp: new Date().toISOString(),
           };
 
+          console.log('📤 Broadcasting message:', newMessage);
+
           // Send to receiver if online
-          const receiverSocket = userSockets.get(receiverId);
-          if (receiverSocket && receiverSocket.readyState === WebSocket.OPEN) {
+          const receiverSocket = userSockets.get(receiverId.toString());
+          if (receiverSocket && receiverSocket.readyState === ws.OPEN) {
+            // Use ws.OPEN instead of WebSocket.OPEN
             receiverSocket.send(
               JSON.stringify({
                 type: 'new-message',
                 message: newMessage,
               }),
             );
+            console.log(`✅ Message sent to receiver ${receiverId}`);
+          } else {
+            console.log(`❌ Receiver ${receiverId} not online`);
           }
 
-          // Optionally: echo back to sender too
+          // Echo back to sender
           ws.send(
             JSON.stringify({
               type: 'new-message',
               message: newMessage,
             }),
           );
+          console.log(`✅ Message echoed to sender ${userId}`);
+        }
+
+        // Handle typing indicators
+        if (data.type === 'typing-start') {
+          const { receiverId } = data;
+          const receiverSocket = userSockets.get(receiverId.toString());
+          if (receiverSocket && receiverSocket.readyState === ws.OPEN) {
+            receiverSocket.send(
+              JSON.stringify({
+                type: 'user-typing',
+                senderId: userId,
+                isTyping: true,
+              }),
+            );
+          }
+        }
+
+        if (data.type === 'typing-stop') {
+          const { receiverId } = data;
+          const receiverSocket = userSockets.get(receiverId.toString());
+          if (receiverSocket && receiverSocket.readyState === ws.OPEN) {
+            receiverSocket.send(
+              JSON.stringify({
+                type: 'user-typing',
+                senderId: userId,
+                isTyping: false,
+              }),
+            );
+          }
         }
       } catch (err) {
-        console.error('Failed to process message:', err);
+        console.error('❌ Failed to process message:', err);
       }
     });
 
     ws.on('close', () => {
-      userSockets.delete(userId);
-      console.log(`❌ User ${userId} disconnected`);
+      if (userId) {
+        userSockets.delete(userId);
+        console.log(`❌ User ${userId} disconnected`);
+      }
+    });
+
+    ws.on('error', (error) => {
+      console.error(`❌ WebSocket error:`, error);
+      if (userId) {
+        userSockets.delete(userId);
+      }
     });
   });
 }

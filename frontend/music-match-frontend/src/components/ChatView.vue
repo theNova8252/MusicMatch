@@ -1,8 +1,17 @@
-<!-- ChatView.vue (Updated) -->
 <template>
   <div v-if="currentUser && matchedUser" class="chat-view">
     <div class="chat-header">
-      <h2>Chat with {{ matchedUser?.name || matchedUser?.username || 'User' }}</h2>
+      <div class="header-content">
+        <h2>Chat with {{ matchedUser?.name || matchedUser?.username || 'User' }}</h2>
+        <div v-if="isUserTyping" class="typing-indicator">
+          <span class="typing-text">typing...</span>
+          <div class="typing-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="chat-messages" ref="messagesContainer">
@@ -31,8 +40,8 @@
     </div>
 
     <div class="chat-input">
-      <input v-model="message" @keyup.enter="sendMessage" placeholder="Type your message..."
-        :disabled="!currentUser || !matchedUser || sending" ref="messageInput" />
+      <input v-model="message" @keyup.enter="sendMessage" @input="handleTyping" @blur="stopTyping"
+        placeholder="Type your message..." :disabled="!currentUser || !matchedUser || sending" ref="messageInput" />
       <button @click="sendMessage" :disabled="!currentUser || !matchedUser || !message.trim() || sending">
         {{ sending ? 'Sending...' : 'Send' }}
       </button>
@@ -45,8 +54,8 @@
 </template>
 
 <script>
-import socket from '../boot/socket';
 import axios from 'axios';
+import { useWebSocket } from '../composables/useWebSocket.js';
 
 export default {
   name: 'ChatView',
@@ -61,7 +70,15 @@ export default {
       chatInitialized: false,
       loadingMessages: false,
       sending: false,
-      socketListenerAdded: false,
+      isUserTyping: false,
+      typingTimeout: null,
+      isCurrentlyTyping: false,
+    };
+  },
+  setup() {
+    const webSocket = useWebSocket();
+    return {
+      webSocket
     };
   },
   watch: {
@@ -81,9 +98,10 @@ export default {
     }
   },
   beforeUnmount() {
-    // Clean up socket listeners
-    if (this.socketListenerAdded) {
-      socket.off('receive_message');
+    this.webSocket.removeHandlers();
+    this.webSocket.disconnect();
+    if (this.typingTimeout) {
+      clearTimeout(this.typingTimeout);
     }
   },
   methods: {
@@ -109,19 +127,45 @@ export default {
       console.log('Initializing chat...');
 
       try {
-        // Connect to socket
-        socket.emit('user_connected', this.currentUser.id);
-        console.log('Socket user_connected emitted');
+        // Connect WebSocket
+        this.webSocket.connect(this.currentUser.id);
+
+        // Set up message handler
+        this.webSocket.onMessage((message) => {
+          console.log('WebSocket message received:', message);
+
+          const isForThisChat = (
+            (message.senderId == this.matchedUser.id && message.receiverId == this.currentUser.id) ||
+            (message.senderId == this.currentUser.id && message.receiverId == this.matchedUser.id)
+          );
+
+          if (isForThisChat) {
+            const exists = this.messages.find(m => m.id === message.id);
+            if (!exists) {
+              this.messages.push(message);
+              this.$nextTick(() => {
+                this.scrollToBottom();
+              });
+            }
+          }
+        });
+
+        // Set up typing handler
+        this.webSocket.onTyping((data) => {
+          if (data.senderId == this.matchedUser.id) {
+            this.isUserTyping = data.isTyping;
+
+            if (data.isTyping) {
+              if (this.typingTimeout) clearTimeout(this.typingTimeout);
+              this.typingTimeout = setTimeout(() => {
+                this.isUserTyping = false;
+              }, 3000);
+            }
+          }
+        });
 
         // Load message history
         await this.loadMessages();
-
-        // Set up real-time message listener (only once)
-        if (!this.socketListenerAdded) {
-          socket.on('receive_message', this.handleIncomingMessage);
-          this.socketListenerAdded = true;
-          console.log('Socket listener added');
-        }
 
       } catch (error) {
         console.error('Error in tryInitChat:', error);
@@ -158,19 +202,6 @@ export default {
       }
     },
 
-    handleIncomingMessage(msg) {
-      console.log('Received message:', msg);
-      if (
-        (msg.senderId === this.currentUser.id && msg.receiverId === this.matchedUser.id) ||
-        (msg.senderId === this.matchedUser.id && msg.receiverId === this.currentUser.id)
-      ) {
-        this.messages.push(msg);
-        this.$nextTick(() => {
-          this.scrollToBottom();
-        });
-      }
-    },
-
     async sendMessage() {
       console.log('sendMessage called');
       if (
@@ -190,16 +221,20 @@ export default {
       this.message = ''; // Clear input immediately
       this.sending = true;
 
-      const messageData = {
-        senderId: this.currentUser.id,
-        receiverId: this.matchedUser.id,
-        content: messageContent,
-        timestamp: new Date().toISOString(),
-      };
+      // Stop typing indicator
+      this.stopTyping();
 
       try {
-        console.log('Sending message:', messageData);
-        socket.emit('send_message', messageData);
+        console.log('Sending message:', messageContent);
+
+        // Send via WebSocket for real-time delivery
+        this.webSocket.sendMessage(this.matchedUser.id, messageContent);
+
+        // Also send via HTTP API for persistence
+        await axios.post('/api/messages/send', {
+          receiverId: this.matchedUser.id,
+          content: messageContent
+        }, { withCredentials: true });
 
         // Focus back to input
         this.$refs.messageInput?.focus();
@@ -210,6 +245,34 @@ export default {
         this.message = messageContent;
       } finally {
         this.sending = false;
+      }
+    },
+
+    handleTyping() {
+      if (!this.isCurrentlyTyping) {
+        this.isCurrentlyTyping = true;
+        this.webSocket.sendTyping(this.matchedUser.id, true);
+      }
+
+      // Clear existing timeout
+      if (this.typingTimeout) {
+        clearTimeout(this.typingTimeout);
+      }
+
+      // Set new timeout to stop typing indicator
+      this.typingTimeout = setTimeout(() => {
+        this.stopTyping();
+      }, 1000);
+    },
+
+    stopTyping() {
+      if (this.isCurrentlyTyping) {
+        this.isCurrentlyTyping = false;
+        this.webSocket.sendTyping(this.matchedUser.id, false);
+      }
+      if (this.typingTimeout) {
+        clearTimeout(this.typingTimeout);
+        this.typingTimeout = null;
       }
     },
 
@@ -245,9 +308,57 @@ export default {
   border-bottom: 1px solid #ddd;
 }
 
-.chat-header h2 {
-  margin: 0;
+.header-content h2 {
+  margin: 0 0 4px 0;
   font-size: 18px;
+}
+
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.typing-text {
+  font-size: 12px;
+  color: #666;
+  font-style: italic;
+}
+
+.typing-dots {
+  display: flex;
+  gap: 2px;
+}
+
+.typing-dots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #666;
+  animation: typing 1.4s infinite ease-in-out;
+}
+
+.typing-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.typing-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes typing {
+
+  0%,
+  80%,
+  100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .chat-messages {

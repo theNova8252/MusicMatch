@@ -1,4 +1,3 @@
-<!-- ChatPage.vue -->
 <template>
   <div class="chat-page">
     <!-- Header -->
@@ -13,7 +12,17 @@
             {{ getInitials(otherUser.name) }}
           </div>
         </div>
-        <h2>{{ otherUser.name }}</h2>
+        <div class="user-details">
+          <h2>{{ otherUser.name }}</h2>
+          <div v-if="isUserTyping" class="typing-indicator">
+            <span class="typing-text">typing...</span>
+            <div class="typing-dots">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+        </div>
       </div>
       <div v-else class="loading-header">Loading...</div>
     </div>
@@ -36,12 +45,12 @@
 
       <div v-else class="messages-list">
         <div v-for="message in messages" :key="message.id"
-          :class="['message', message.senderId === currentUserId ? 'sent' : 'received']">
+          :class="['message', message.senderId == currentUserId ? 'sent' : 'received']">
           <div class="message-content">
             {{ message.content }}
           </div>
           <div class="message-time">
-            {{ formatTime(message.createdAt) }}
+            {{ formatTime(message.createdAt || message.timestamp) }}
           </div>
         </div>
       </div>
@@ -50,8 +59,8 @@
     <!-- Message Input -->
     <div class="message-input-container">
       <div class="message-input">
-        <input v-model="newMessage" @keypress.enter="sendMessage" placeholder="Type a message..." :disabled="sending"
-          ref="messageInput" />
+        <input v-model="newMessage" @keypress.enter="sendMessage" @input="handleTyping" @blur="stopTyping"
+          placeholder="Type a message..." :disabled="sending" ref="messageInput" />
         <button @click="sendMessage" :disabled="!newMessage.trim() || sending" class="send-btn">
           {{ sending ? 'Sending...' : 'Send' }}
         </button>
@@ -62,7 +71,7 @@
 
 <script>
 import axios from 'axios';
-import io from 'socket.io-client';
+import { useWebSocket } from '../composables/useWebSocket.js';
 
 export default {
   name: 'ChatPage',
@@ -75,8 +84,17 @@ export default {
       loading: true,
       error: null,
       sending: false,
-      socket: null,
       partnerId: null,
+      isUserTyping: false,
+      typingTimeout: null,
+      isCurrentlyTyping: false,
+      socketInitialized: false,
+    };
+  },
+  setup() {
+    const webSocket = useWebSocket();
+    return {
+      webSocket
     };
   },
   async created() {
@@ -85,13 +103,13 @@ export default {
     await this.loadCurrentUser();
     await this.loadOtherUser();
     await this.loadMessages();
-    this.initializeSocket();
+    this.initializeWebSocket();
   },
   beforeUnmount() {
-    // Clean up socket connection
-    if (this.socket) {
-      this.socket.off('receive_message'); // Remove specific listener
-      this.socket.disconnect();
+    this.webSocket.removeHandlers();
+    this.webSocket.disconnect();
+    if (this.typingTimeout) {
+      clearTimeout(this.typingTimeout);
     }
   },
   methods: {
@@ -127,19 +145,18 @@ export default {
       try {
         let res;
         try {
-          res = await axios.get(`http://localhost:5000/api/messages/${this.partnerId}`, {
+          res = await axios.get(`http://localhost:5000/api/chat/${this.partnerId}`, {
             withCredentials: true
           });
         } catch {
-          console.log('First endpoint failed, trying alternative...');
-          res = await axios.get(`http://localhost:5000/api/chat/${this.partnerId}`, {
+          console.log('Chat endpoint failed, trying messages endpoint...');
+          res = await axios.get(`http://localhost:5000/api/messages/${this.partnerId}`, {
             withCredentials: true
           });
         }
 
         console.log('Messages API response:', res.data);
 
-        // Handle different response structures
         let messages = [];
         if (Array.isArray(res.data)) {
           messages = res.data;
@@ -155,13 +172,11 @@ export default {
         this.messages = messages;
         console.log('Messages loaded:', this.messages.length);
 
-        // Scroll to bottom after loading messages
         this.$nextTick(() => {
           this.scrollToBottom();
         });
       } catch (err) {
         console.error('Error loading messages:', err);
-        console.error('Error details:', err.response?.data);
         this.error = `Error loading messages: ${err.response?.status || 'Network error'}`;
         this.messages = [];
       } finally {
@@ -169,55 +184,47 @@ export default {
       }
     },
 
-    initializeSocket() {
-      console.log('=== INITIALIZING SOCKET ===');
-      console.log('Current user ID:', this.currentUserId);
-      console.log('Partner ID:', this.partnerId);
+    initializeWebSocket() {
+      if (!this.currentUserId || this.socketInitialized) {
+        return;
+      }
 
-      this.socket = io('http://localhost:5000', {
-        withCredentials: true
-      });
+      console.log('=== INITIALIZING WEBSOCKET ===');
+      this.socketInitialized = true;
 
-      this.socket.on('connect', () => {
-        console.log('=== SOCKET CONNECTED ===');
-        console.log('Socket ID:', this.socket.id);
-        if (this.currentUserId) {
-          this.socket.emit('user_connected', this.currentUserId);
-          console.log('Emitted user_connected with ID:', this.currentUserId);
-        }
-      });
+      this.webSocket.connect(this.currentUserId);
 
-      // Listen for ANY socket events for debugging
-      this.socket.onAny((eventName, ...args) => {
-        console.log('=== SOCKET EVENT RECEIVED ===');
-        console.log('Event:', eventName);
-        console.log('Data:', args);
-      });
+      // Handle incoming messages
+      this.webSocket.onMessage((message) => {
+        console.log('=== WEBSOCKET MESSAGE RECEIVED ===', message);
 
-      this.socket.on('receive_message', (message) => {
-        console.log('=== RECEIVE_MESSAGE EVENT ===');
-        console.log('Received message:', message);
-        console.log('Message senderId:', message.senderId, '(type:', typeof message.senderId, ')');
-        console.log('My partnerId:', this.partnerId, '(type:', typeof this.partnerId, ')');
-        console.log('Message receiverId:', message.receiverId, '(type:', typeof message.receiverId, ')');
-        console.log('My currentUserId:', this.currentUserId, '(type:', typeof this.currentUserId, ')');
-
-        // Use == instead of === for loose comparison (handles string vs number)
-        const isIncomingMessage = (
-          message.senderId == this.partnerId &&
-          message.receiverId == this.currentUserId
+        // Check if message is for this chat
+        const isForThisChat = (
+          (message.senderId == this.partnerId && message.receiverId == this.currentUserId) ||
+          (message.senderId == this.currentUserId && message.receiverId == this.partnerId)
         );
 
-        console.log('Is incoming message for this chat?', isIncomingMessage);
-
-        if (isIncomingMessage) {
-          const exists = this.messages.find(m => m.id === message.id);
-          console.log('Message already exists?', !!exists);
+        if (isForThisChat) {
+          // Check if message already exists to avoid duplicates
+          const exists = this.messages.find(m =>
+            m.id === message.id ||
+            (m.content === message.content &&
+              m.senderId == message.senderId &&
+              Math.abs(new Date(m.createdAt || m.timestamp) - new Date(message.timestamp)) < 1000)
+          );
 
           if (!exists) {
-            console.log('Adding message to array...');
-            this.messages.push(message);
-            console.log('Messages count after adding:', this.messages.length);
+            // Convert string IDs to numbers to match your data format
+            const newMessage = {
+              id: message.id,
+              senderId: parseInt(message.senderId),
+              receiverId: parseInt(message.receiverId),
+              content: message.content,
+              createdAt: message.timestamp,
+              timestamp: message.timestamp
+            };
+
+            this.messages.push(newMessage);
 
             this.$nextTick(() => {
               this.scrollToBottom();
@@ -226,21 +233,23 @@ export default {
         }
       });
 
-      this.socket.on('connect_error', (error) => {
-        console.error('=== SOCKET CONNECTION ERROR ===');
-        console.error('Error:', error);
-      });
+      // Handle typing indicators
+      this.webSocket.onTyping((data) => {
+        console.log('=== TYPING EVENT ===', data);
 
-      this.socket.on('disconnect', (reason) => {
-        console.log('=== SOCKET DISCONNECTED ===');
-        console.log('Reason:', reason);
-      });
+        if (data.senderId == this.partnerId) {
+          this.isUserTyping = data.isTyping;
 
-      // Add a test listener to see if we're getting any events at all
-      this.socket.on('test_event', (data) => {
-        console.log('=== TEST EVENT RECEIVED ===', data);
+          if (data.isTyping) {
+            if (this.typingTimeout) clearTimeout(this.typingTimeout);
+            this.typingTimeout = setTimeout(() => {
+              this.isUserTyping = false;
+            }, 3000);
+          }
+        }
       });
     },
+
     async sendMessage() {
       if (!this.newMessage.trim() || this.sending) return;
 
@@ -248,47 +257,60 @@ export default {
       const content = this.newMessage.trim();
       this.newMessage = '';
 
+      this.stopTyping();
+
       console.log('=== SENDING MESSAGE ===');
       console.log('Content:', content);
+      console.log('Partner ID:', this.partnerId);
+      console.log('Current User ID:', this.currentUserId);
 
       try {
+        // Send via WebSocket first for immediate feedback
+        this.webSocket.sendMessage(this.partnerId, content);
+
+        // Then send via HTTP API for persistence
         const res = await axios.post('http://localhost:5000/api/messages/send', {
-          receiverId: this.partnerId,
+          receiverId: this.partnerId,  // Add this line!
           content
         }, {
           withCredentials: true
         });
 
-        console.log('Message sent successfully:', res.data);
-
-        // Add the message to MY view immediately (don't wait for socket)
-        const sentMessage = {
-          id: res.data.id || `msg-${Date.now()}`,
-          content: content,
-          senderId: this.currentUserId,
-          receiverId: this.partnerId,
-          createdAt: res.data.createdAt || new Date().toISOString()
-        };
-
-        // Only add if it doesn't already exist
-        const exists = this.messages.find(m => m.id === sentMessage.id);
-        if (!exists) {
-          this.messages.push(sentMessage);
-          console.log('Added sent message to local array');
-        }
-
-        this.$nextTick(() => {
-          this.scrollToBottom();
-        });
-
+        console.log('Message saved to database:', res.data);
         this.$refs.messageInput?.focus();
 
       } catch (err) {
         console.error('Error sending message:', err);
         this.error = 'Error sending message';
-        this.newMessage = content;
+        this.newMessage = content; // Restore message if failed
       } finally {
         this.sending = false;
+      }
+    },
+
+    handleTyping() {
+      if (!this.isCurrentlyTyping) {
+        this.isCurrentlyTyping = true;
+        this.webSocket.sendTyping(this.partnerId, true);
+      }
+
+      if (this.typingTimeout) {
+        clearTimeout(this.typingTimeout);
+      }
+
+      this.typingTimeout = setTimeout(() => {
+        this.stopTyping();
+      }, 1000);
+    },
+
+    stopTyping() {
+      if (this.isCurrentlyTyping) {
+        this.isCurrentlyTyping = false;
+        this.webSocket.sendTyping(this.partnerId, false);
+      }
+      if (this.typingTimeout) {
+        clearTimeout(this.typingTimeout);
+        this.typingTimeout = null;
       }
     },
 
@@ -322,7 +344,6 @@ export default {
   }
 };
 </script>
-
 <style scoped>
 .chat-page {
   display: flex;
@@ -387,10 +408,59 @@ export default {
   font-size: 14px;
 }
 
-.user-info h2 {
+.user-details h2 {
   margin: 0;
   font-size: 18px;
   color: #333;
+}
+
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.typing-text {
+  font-size: 12px;
+  color: #666;
+  font-style: italic;
+}
+
+.typing-dots {
+  display: flex;
+  gap: 2px;
+}
+
+.typing-dots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #666;
+  animation: typing 1.4s infinite ease-in-out;
+}
+
+.typing-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.typing-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes typing {
+
+  0%,
+  80%,
+  100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .loading-header {
