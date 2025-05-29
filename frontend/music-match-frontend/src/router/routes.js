@@ -21,6 +21,7 @@ const routes = [
   },
   {
     path: '/swipe',
+    name: 'MatchSwipe',
     component: () => import('pages/MatchSwipe.vue'),
   },
   {

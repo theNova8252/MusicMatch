@@ -26,7 +26,6 @@
 
       <div v-else-if="error" class="error">
         <p>Error: {{ error }}</p>
-        <p>{{ console.log('Route param (userId):', this.$route.params.userId) }}</p>
         <button @click="loadMessages">Retry</button>
       </div>
 
@@ -51,7 +50,8 @@
     <!-- Message Input -->
     <div class="message-input-container">
       <div class="message-input">
-        <input v-model="newMessage" @keypress.enter="sendMessage" placeholder="Type a message..." :disabled="sending" />
+        <input v-model="newMessage" @keypress.enter="sendMessage" placeholder="Type a message..." :disabled="sending"
+          ref="messageInput" />
         <button @click="sendMessage" :disabled="!newMessage.trim() || sending" class="send-btn">
           {{ sending ? 'Sending...' : 'Send' }}
         </button>
@@ -62,10 +62,10 @@
 
 <script>
 import axios from 'axios';
+import io from 'socket.io-client';
 
 export default {
   name: 'ChatPage',
-  props: ['partnerId'],
   data() {
     return {
       otherUser: null,
@@ -75,23 +75,35 @@ export default {
       loading: true,
       error: null,
       sending: false,
+      socket: null,
+      partnerId: null,
     };
   },
   async created() {
+    this.partnerId = this.$route.params.partnerId;
+    console.log('ChatPage created with partnerId:', this.partnerId);
     await this.loadCurrentUser();
     await this.loadOtherUser();
     await this.loadMessages();
+    this.initializeSocket();
+  },
+  beforeUnmount() {
+    // Clean up socket connection
+    if (this.socket) {
+      this.socket.off('receive_message'); // Remove specific listener
+      this.socket.disconnect();
+    }
   },
   methods: {
     async loadCurrentUser() {
       try {
         const res = await axios.get('http://localhost:5000/api/users/me', { withCredentials: true });
         this.currentUserId = res.data?.user?.id || res.data?.id || null;
+        console.log('Current user loaded:', this.currentUserId);
       } catch (err) {
-  console.error(err);
-  this.error = 'Fehler beim Laden des aktuellen Benutzers';
-}
-
+        console.error('Error loading current user:', err);
+        this.error = 'Error loading current user';
+      }
     },
 
     async loadOtherUser() {
@@ -99,37 +111,145 @@ export default {
         const res = await axios.get(`http://localhost:5000/api/users/${this.partnerId}`, {
           withCredentials: true
         });
-        this.otherUser = res.data?.user || null;
+        this.otherUser = res.data?.user || res.data || null;
+        console.log('Other user loaded:', this.otherUser);
       } catch (err) {
-  console.error(err);
-  this.error = 'Fehler beim Laden des aktuellen Benutzers';
-}
-
+        console.error('Error loading other user:', err);
+        this.error = 'Error loading user information';
+      }
     },
 
     async loadMessages() {
       this.loading = true;
       this.error = null;
+      console.log('Loading messages for partner:', this.partnerId);
+
       try {
-        const res = await axios.get(`http://localhost:5000/api/messages/${this.partnerId}`, {
-          withCredentials: true
+        let res;
+        try {
+          res = await axios.get(`http://localhost:5000/api/messages/${this.partnerId}`, {
+            withCredentials: true
+          });
+        } catch {
+          console.log('First endpoint failed, trying alternative...');
+          res = await axios.get(`http://localhost:5000/api/chat/${this.partnerId}`, {
+            withCredentials: true
+          });
+        }
+
+        console.log('Messages API response:', res.data);
+
+        // Handle different response structures
+        let messages = [];
+        if (Array.isArray(res.data)) {
+          messages = res.data;
+        } else if (res.data.messages && Array.isArray(res.data.messages)) {
+          messages = res.data.messages;
+        } else if (res.data.data && Array.isArray(res.data.data)) {
+          messages = res.data.data;
+        } else {
+          console.warn('Unexpected messages response format:', res.data);
+          messages = [];
+        }
+
+        this.messages = messages;
+        console.log('Messages loaded:', this.messages.length);
+
+        // Scroll to bottom after loading messages
+        this.$nextTick(() => {
+          this.scrollToBottom();
         });
-        this.messages = Array.isArray(res.data) ? res.data : [];
-        this.$nextTick(this.scrollToBottom);
       } catch (err) {
-  console.error(err);
-  this.error = 'Fehler beim Laden des aktuellen Benutzers';
-}
- finally {
+        console.error('Error loading messages:', err);
+        console.error('Error details:', err.response?.data);
+        this.error = `Error loading messages: ${err.response?.status || 'Network error'}`;
+        this.messages = [];
+      } finally {
         this.loading = false;
       }
     },
 
+    initializeSocket() {
+      console.log('=== INITIALIZING SOCKET ===');
+      console.log('Current user ID:', this.currentUserId);
+      console.log('Partner ID:', this.partnerId);
+
+      this.socket = io('http://localhost:5000', {
+        withCredentials: true
+      });
+
+      this.socket.on('connect', () => {
+        console.log('=== SOCKET CONNECTED ===');
+        console.log('Socket ID:', this.socket.id);
+        if (this.currentUserId) {
+          this.socket.emit('user_connected', this.currentUserId);
+          console.log('Emitted user_connected with ID:', this.currentUserId);
+        }
+      });
+
+      // Listen for ANY socket events for debugging
+      this.socket.onAny((eventName, ...args) => {
+        console.log('=== SOCKET EVENT RECEIVED ===');
+        console.log('Event:', eventName);
+        console.log('Data:', args);
+      });
+
+      this.socket.on('receive_message', (message) => {
+        console.log('=== RECEIVE_MESSAGE EVENT ===');
+        console.log('Received message:', message);
+        console.log('Message senderId:', message.senderId, '(type:', typeof message.senderId, ')');
+        console.log('My partnerId:', this.partnerId, '(type:', typeof this.partnerId, ')');
+        console.log('Message receiverId:', message.receiverId, '(type:', typeof message.receiverId, ')');
+        console.log('My currentUserId:', this.currentUserId, '(type:', typeof this.currentUserId, ')');
+
+        // Use == instead of === for loose comparison (handles string vs number)
+        const isIncomingMessage = (
+          message.senderId == this.partnerId &&
+          message.receiverId == this.currentUserId
+        );
+
+        console.log('Is incoming message for this chat?', isIncomingMessage);
+
+        if (isIncomingMessage) {
+          const exists = this.messages.find(m => m.id === message.id);
+          console.log('Message already exists?', !!exists);
+
+          if (!exists) {
+            console.log('Adding message to array...');
+            this.messages.push(message);
+            console.log('Messages count after adding:', this.messages.length);
+
+            this.$nextTick(() => {
+              this.scrollToBottom();
+            });
+          }
+        }
+      });
+
+      this.socket.on('connect_error', (error) => {
+        console.error('=== SOCKET CONNECTION ERROR ===');
+        console.error('Error:', error);
+      });
+
+      this.socket.on('disconnect', (reason) => {
+        console.log('=== SOCKET DISCONNECTED ===');
+        console.log('Reason:', reason);
+      });
+
+      // Add a test listener to see if we're getting any events at all
+      this.socket.on('test_event', (data) => {
+        console.log('=== TEST EVENT RECEIVED ===', data);
+      });
+    },
     async sendMessage() {
       if (!this.newMessage.trim() || this.sending) return;
+
       this.sending = true;
       const content = this.newMessage.trim();
       this.newMessage = '';
+
+      console.log('=== SENDING MESSAGE ===');
+      console.log('Content:', content);
 
       try {
         const res = await axios.post('http://localhost:5000/api/messages/send', {
@@ -139,22 +259,46 @@ export default {
           withCredentials: true
         });
 
-        if (res.data) {
-          this.messages.push(res.data);
-          this.$nextTick(this.scrollToBottom);
+        console.log('Message sent successfully:', res.data);
+
+        // Add the message to MY view immediately (don't wait for socket)
+        const sentMessage = {
+          id: res.data.id || `msg-${Date.now()}`,
+          content: content,
+          senderId: this.currentUserId,
+          receiverId: this.partnerId,
+          createdAt: res.data.createdAt || new Date().toISOString()
+        };
+
+        // Only add if it doesn't already exist
+        const exists = this.messages.find(m => m.id === sentMessage.id);
+        if (!exists) {
+          this.messages.push(sentMessage);
+          console.log('Added sent message to local array');
         }
+
+        this.$nextTick(() => {
+          this.scrollToBottom();
+        });
+
+        this.$refs.messageInput?.focus();
+
       } catch (err) {
-  console.error(err);
-  this.error = 'Fehler beim Laden des aktuellen Benutzers';
-}
- finally {
+        console.error('Error sending message:', err);
+        this.error = 'Error sending message';
+        this.newMessage = content;
+      } finally {
         this.sending = false;
       }
     },
 
     scrollToBottom() {
       const el = this.$refs.messagesContainer;
-      if (el) el.scrollTop = el.scrollHeight;
+      if (el) {
+        setTimeout(() => {
+          el.scrollTop = el.scrollHeight;
+        }, 50);
+      }
     },
 
     goBack() {
