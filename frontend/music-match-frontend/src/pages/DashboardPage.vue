@@ -3,16 +3,25 @@
     <div class="blur-bg"></div>
     <div class="profile-container q-pa-md">
       <div class="nav-bar q-mb-lg">
-        <router-link to="/swipe" class="no-decoration">
-          <h4 class="text-weight-bold q-my-none cursor-pointer text-white">MusicMatch</h4>
-        </router-link>
-        <q-btn flat round color="primary" icon="logout" @click="logout">
-          <q-tooltip>Sign Out</q-tooltip>
-        </q-btn>
-        <!-- Add inside your .nav-bar div -->
-        <q-btn flat round :icon="isDarkMode ? 'dark_mode' : 'light_mode'" @click="toggleDarkMode" color="white">
-          <q-tooltip>{{ isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode' }}</q-tooltip>
-        </q-btn>
+        <div class="logo-section">
+          <router-link to="/swipe" class="no-decoration">
+            <h4 class="text-weight-bold q-my-none cursor-pointer text-white">MusicMatch</h4>
+          </router-link>
+          <div class="swipe-hint" @click="goToSwipe">
+            <div class="animated-arrow">
+              <q-icon name="arrow_back" />
+            </div>
+            <span class="swipe-text">Start swiping</span>
+          </div>
+        </div>
+        <div class="nav-buttons">
+          <q-btn flat round color="primary" icon="logout" @click="logout">
+            <q-tooltip>Sign Out</q-tooltip>
+          </q-btn>
+          <q-btn flat round :icon="isDarkMode ? 'dark_mode' : 'light_mode'" @click="toggleDarkMode" color="white">
+            <q-tooltip>{{ isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode' }}</q-tooltip>
+          </q-btn>
+        </div>
       </div>
       <div class="profile-header q-mb-lg">
         <div class="profile-header-content">
@@ -259,18 +268,7 @@
 
             <div class="account-settings q-mt-md">
               <q-list>
-                <q-item clickable v-ripple @click="openPrivacySettings">
-                  <q-item-section avatar>
-                    <q-icon name="security" color="primary" />
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label>Privacy Settings</q-item-label>
-                    <q-item-label caption>Manage your privacy preferences</q-item-label>
-                  </q-item-section>
-                  <q-item-section side>
-                    <q-icon name="arrow_forward_ios" color="grey-7" size="xs" />
-                  </q-item-section>
-                </q-item>
+
 
                 <q-item clickable v-ripple @click="confirmDeleteAccount">
                   <q-item-section avatar>
@@ -615,9 +613,7 @@ const openRecommendations = () => {
   recommendationsDialog.value = true;
 };
 
-const openPrivacySettings = () => {
-  privacySettingsDialog.value = true;
-};
+
 
 const savePrivacySettings = async () => {
   try {
@@ -880,6 +876,9 @@ onMounted(() => {
   setInterval(fetchUserProfile, 10000);
 });
 
+const goToSwipe = () => {
+  window.location.href = '/swipe';
+};
 </script>
 
 <style lang="scss">
@@ -1373,5 +1372,163 @@ onMounted(() => {
 .dark-mode .q-chip,
 .dark-mode .empty-state {
   transition: all 0.3s ease;
+}
+/* Logo section with animated hint */
+/* Logo section with animated hint */
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  position: relative;
+}
+
+.nav-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.swipe-hint {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
+  padding: 12px 20px;
+  border-radius: 30px;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.swipe-hint::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+.swipe-hint:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.1));
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+.swipe-hint:hover::before {
+  animation: shimmer-fast 0.8s ease-in-out;
+}
+
+.swipe-hint:active {
+  transform: translateY(0px) scale(0.98);
+  transition: all 0.1s ease;
+}
+
+.animated-arrow {
+  color: #fbbf24;
+  font-size: 20px;
+  animation: arrow-pulse 2.5s ease-in-out infinite;
+  filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.6));
+  transition: all 0.3s ease;
+}
+
+.swipe-hint:hover .animated-arrow {
+  animation: arrow-bounce 0.6s ease-in-out;
+  color: #f59e0b;
+  filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.8));
+}
+
+.swipe-text {
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+@keyframes shimmer-fast {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+@keyframes arrow-pulse {
+  0%, 100% {
+    transform: translateX(0px) scale(1);
+    filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.6));
+  }
+  50% {
+    transform: translateX(-6px) scale(1.1);
+    filter: drop-shadow(0 0 12px rgba(251, 191, 36, 0.9));
+  }
+}
+
+@keyframes arrow-bounce {
+  0%, 100% {
+    transform: translateX(0px) scale(1);
+  }
+  25% {
+    transform: translateX(-8px) scale(1.15);
+  }
+  50% {
+    transform: translateX(-4px) scale(1.05);
+  }
+  75% {
+    transform: translateX(-6px) scale(1.1);
+  }
+}
+
+/* Dark mode styling for the hint */
+.dark-mode .swipe-hint {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(76, 29, 149, 0.15));
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  box-shadow: 
+    0 8px 32px rgba(139, 92, 246, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 20px rgba(139, 92, 246, 0.15);
+}
+
+.dark-mode .swipe-hint::before {
+  background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent);
+}
+
+.dark-mode .swipe-hint:hover {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.35), rgba(76, 29, 149, 0.2));
+  box-shadow: 
+    0 12px 40px rgba(139, 92, 246, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 0 30px rgba(139, 92, 246, 0.4);
+}
+
+.dark-mode .animated-arrow {
+  color: var(--accent-light);
+  filter: drop-shadow(0 0 12px rgba(139, 92, 246, 0.8));
+}
+
+.dark-mode .swipe-hint:hover .animated-arrow {
+  color: #c4b5fd;
+  filter: drop-shadow(0 0 16px rgba(196, 181, 253, 0.9));
+}
+
+.dark-mode .swipe-text {
+  color: rgba(224, 231, 255, 0.95);
+  text-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
 }
 </style>

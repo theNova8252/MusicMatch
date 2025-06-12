@@ -1,6 +1,6 @@
 // src/router/routes.js
 import ChatList from 'pages/ChatList.vue';
-import ChatPage from 'pages/ChatPage.vue';
+import ChatPage from 'pages/.vue';
 
 const routes = [
   {
